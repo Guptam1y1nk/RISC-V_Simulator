@@ -4,18 +4,46 @@
 #include <algorithm>
 using namespace std;
 
-string convert_deci_to_binary(int n, int len){
+void twoComplement(string &s){
+	int n = s.size()-1;
+	while(s[n] != '1'){
+		n--;
+	}
+	for(int i = n-1;i>=0;i--){
+		if(s[i] == '1'){
+			s[i] = '0';
+		}
+		else if(s[i] == '0'){
+			s[i] = '1';
+		}
+	}
+}
+
+string convert_deci_to_binary(int n,int width){
 	string s;
+	bool neg = false;
+
+	if(n<0){
+		neg = true;
+		n = -n;
+	}
+
 	while(n>0){
 		s.push_back( (n%2) + '0');
 		n = n/2;
 	}
 	reverse(s.begin(),s.end());
-	int x = s.size();
-	string s1(len-x,'0');
+	
+	int len = s.size();
+	string s1(width-len,'0');
 	s = s1+s;
+	if(neg){
+		twoComplement(s);
+	}
+
 	return s;
 }
+
 
 void convert_hex_to_binary(map<char,string> &hex_to_binary){
 	hex_to_binary['0'] = "0000";
