@@ -1,16 +1,18 @@
-#include <bits/stdc++.h>
-
+#include <iostream>
+#include <string>
+#include <map>
+#include <algorithm>
 using namespace std;
 
-string convert_deci_to_binary(int n){
+string convert_deci_to_binary(int n, int len){
 	string s;
 	while(n>0){
 		s.push_back( (n%2) + '0');
 		n = n/2;
 	}
 	reverse(s.begin(),s.end());
-	int len = s.size();
-	string s1(5-len,'0');
+	int x = s.size();
+	string s1(len-x,'0');
 	s = s1+s;
 	return s;
 }
@@ -53,36 +55,36 @@ void convert_binary_to_hex(map<string,char> &binary_to_hex){
 	binary_to_hex["1111"] = 'f';
 }
 
-void find_instructType(map<string,string> &instruct){
-	instruct["add"] = "R"; 
-	instruct["sub"] = "R"; 
-	instruct["and"] = "R"; 
-	instruct["or"] = "R"; 
-	instruct["xor"] = "R"; 
-	instruct["sll"] = "R"; 
-	instruct["srl"] = "R"; 
-	instruct["sra"] = "R"; 
+void find_instructType(map<string,string> &instructType){
+	instructType["add"] = "R"; 
+	instructType["sub"] = "R"; 
+	instructType["and"] = "R"; 
+	instructType["or"] = "R"; 
+	instructType["xor"] = "R"; 
+	instructType["sll"] = "R"; 
+	instructType["srl"] = "R"; 
+	instructType["sra"] = "R"; 
 
-	instruct["addi"] = "I";
-	instruct["xori"] = "I";
-	instruct["ori"] = "I";
-	instruct["andi"] = "I";
-	instruct["slli"] = "I";
-	instruct["srli"] = "I";
-	instruct["srai"] = "I";
+	instructType["addi"] = "I";
+	instructType["xori"] = "I";
+	instructType["ori"] = "I";
+	instructType["andi"] = "I";
+	instructType["slli"] = "I";
+	instructType["srli"] = "I";
+	instructType["srai"] = "I";
 
-	instruct["lb"] = "I_l";
-	instruct["lh"] = "I_l";
-	instruct["lw"] = "I_l";
-	instruct["ld"] = "I_l";
-	instruct["lbu"] = "I_l";
-	instruct["lhu"] = "I_l";
-	instruct["lwu"] = "I_l";
+	instructType["lb"] = "I_l";
+	instructType["lh"] = "I_l";
+	instructType["lw"] = "I_l";
+	instructType["ld"] = "I_l";
+	instructType["lbu"] = "I_l";
+	instructType["lhu"] = "I_l";
+	instructType["lwu"] = "I_l";
 
-	instruct["sb"] = "S";
-	instruct["sh"] = "S";
-	instruct["sw"] = "S";
-	instruct["sd"] = "S";
+	instructType["sb"] = "S";
+	instructType["sh"] = "S";
+	instructType["sw"] = "S";
+	instructType["sd"] = "S";
 }
 
 void find_opcode(map<string,string> &instruct_opcode){
@@ -129,14 +131,14 @@ void find_funct3(map<string,string> &instructFunct3){
 }
 
 void find_funct7(map<string,string> &instructFunct7){
-	instructFunct7["add"] = "000"; 
-	instructFunct7["sub"] = "000"; 
-	instructFunct7["and"] = "111"; 
-	instructFunct7["or"] = "110"; 
-	instructFunct7["xor"] = "100"; 
-	instructFunct7["sll"] = "001"; 
-	instructFunct7["srl"] = "101"; 
-	instructFunct7["sra"] = "101"; 
+	instructFunct7["add"] = "0000000"; 
+	instructFunct7["sub"] = "0100000"; 
+	instructFunct7["and"] = "0000000"; 
+	instructFunct7["or"] = "0000000"; 
+	instructFunct7["xor"] = "0000000"; 
+	instructFunct7["sll"] = "0000000"; 
+	instructFunct7["srl"] = "0000000"; 
+	instructFunct7["sra"] = "0100000"; 
 
 	instructFunct7["addi"] = "000";
 	instructFunct7["xori"] = "100";
@@ -168,6 +170,7 @@ map<string,string> instructType;
 map<string,string> instruct_opcode;
 map<string,string> instructFunct3;
 map<string,string> instructFunct7;
+map<string, string> alias = {{"zero", "x0"}, {"ra", "x1"}, {"sp", "x2"}, {"gp", "x3"}, {"tp", "x4"}, {"t0", "x5"}, {"t1", "x6"}, {"t2", "x7"}, {"s0", "x8"}, {"s1", "x9"}, {"a0", "x10"}, {"a1", "x11"}, {"a2", "x12"}, {"a3", "x13"}, {"a4", "x14"}, {"a5", "x15"}, {"a6", "x16"}, {"a7", "x17"}, {"s2", "x18"}, {"s3", "x19"}, {"s4", "x20"}, {"s5", "x21"}, {"s6", "x22"}, {"s7", "x23"}, {"s8", "x24"}, {"s9", "x25"}, {"s10", "x26"}, {"s11", "x27"}, {"t3", "x28"}, {"t4", "x29"}, {"t5", "x30"}, {"t6", "x31"}};
 
 string convert_32bits_to_hex(string s){
 	string ans = "";
@@ -179,19 +182,72 @@ string convert_32bits_to_hex(string s){
 }
 
 int main(){
-	for(int i=0;i<32;i++){
-		deci_to_binary[i] = convert_deci_to_binary(i);
-		//cout<<i<<" -> "<<deci_to_binary[i];
-		//cout<<endl;
-	}
-	convert_hex_to_binary(hex_to_binary);
-	convert_binary_to_hex(binary_to_hex);
-	find_instructType(instructType);
-	find_opcode(instruct_opcode);
-	find_funct3(instructFunct3);
+    find_instructType(instructType);
+    find_opcode(instruct_opcode);
+    find_funct3(instructFunct3);
+    find_funct7(instructFunct7);
+    convert_binary_to_hex(binary_to_hex);
 
-	string s(32,'0');
-	cout<<convert_32bits_to_hex(s)<<endl;
-	//cout<<instruct_opcode[instruct["and"]]<<endl;
+    string op;
+    cin>>op;
+
+    string rd;
+    cin>>rd;
+    rd.pop_back();
+
+    string rs1;
+    cin>>rs1;
+    rs1.pop_back();
+
+    string rs2;
+    cin>>rs2;
+
+    string binary_code = "";
+
+    string type = instructType[op];
+    if(type=="R"){
+        for(int k=0;k<3;k++){
+            string temp;
+            if(k==0){
+                temp = rd;
+            }
+            else if(k==1){
+                temp = rs1;
+            }
+            else{
+                temp = rs2;
+            }
+
+            if(temp[0] != 'x'){
+                temp = alias[temp];
+            }
+
+            int num = 0;
+            for(int j=1;j<temp.length();j++){
+                num = num*10 + (temp[j]-'0');
+            }
+
+            if(k==0){
+                rd = convert_deci_to_binary(num, 5);
+            }
+            else if(k==1){
+                rs1 = convert_deci_to_binary(num, 5);
+            }
+            else{
+                rs2 = convert_deci_to_binary(num, 5);
+            }
+        } 
+
+        binary_code += instructFunct7[op];
+        binary_code += rs2;
+        binary_code += rs1;
+        binary_code += instructFunct3[op];
+        binary_code += rd;
+        binary_code += instruct_opcode[type];
+    }
+
+    string machine_code = convert_32bits_to_hex(binary_code);
+    cout<<machine_code<<endl;
+
 	return 0;
 }
