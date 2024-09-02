@@ -1,49 +1,23 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
-void twoComplement(string &s){
-	int n = s.size()-1;
-	while(s[n] != '1'){
-		n--;
-	}
-	for(int i = n-1;i>=0;i--){
-		if(s[i] == '1'){
-			s[i] = '0';
-		}
-		else if(s[i] == '0'){
-			s[i] = '1';
-		}
-	}
-}
-
-string convert_deci_to_binary(int n,int width){
+string convert_deci_to_binary(int n, int len){
 	string s;
-	bool neg = false;
-
-	if(n<0){
-		neg = true;
-		n = -n;
-	}
-
 	while(n>0){
 		s.push_back( (n%2) + '0');
 		n = n/2;
 	}
 	reverse(s.begin(),s.end());
-	
-	int len = s.size();
-	string s1(width-len,'0');
+	int x = s.size();
+	string s1(len-x,'0');
 	s = s1+s;
-	if(neg){
-		twoComplement(s);
-	}
-
 	return s;
 }
-
 
 void convert_hex_to_binary(map<char,string> &hex_to_binary){
 	hex_to_binary['0'] = "0000";
@@ -216,66 +190,89 @@ int main(){
     find_funct7(instructFunct7);
     convert_binary_to_hex(binary_to_hex);
 
-    string op;
-    cin>>op;
-
-    string rd;
-    cin>>rd;
-    rd.pop_back();
-
-    string rs1;
-    cin>>rs1;
-    rs1.pop_back();
-
-    string rs2;
-    cin>>rs2;
-
-    string binary_code = "";
-
-    string type = instructType[op];
-    if(type=="R"){
-        for(int k=0;k<3;k++){
-            string temp;
-            if(k==0){
-                temp = rd;
-            }
-            else if(k==1){
-                temp = rs1;
-            }
-            else{
-                temp = rs2;
-            }
-
-            if(temp[0] != 'x'){
-                temp = alias[temp];
-            }
-
-            int num = 0;
-            for(int j=1;j<temp.length();j++){
-                num = num*10 + (temp[j]-'0');
-            }
-
-            if(k==0){
-                rd = convert_deci_to_binary(num, 5);
-            }
-            else if(k==1){
-                rs1 = convert_deci_to_binary(num, 5);
-            }
-            else{
-                rs2 = convert_deci_to_binary(num, 5);
-            }
-        } 
-
-        binary_code += instructFunct7[op];
-        binary_code += rs2;
-        binary_code += rs1;
-        binary_code += instructFunct3[op];
-        binary_code += rd;
-        binary_code += instruct_opcode[type];
+	ifstream inputFile("input.s");
+    vector<string> text;
+    string line;
+    while(getline(inputFile,line)){
+        text.push_back(line);
     }
+    inputFile.close();
 
-    string machine_code = convert_32bits_to_hex(binary_code);
-    cout<<machine_code<<endl;
+	for(int i=0;i<text.size();i++){
+		string line = text[i];
+		string op = "", rd = "", rs1 = "", rs2 = "";
+
+		int a = 0;
+		while(line[a] != ' '){
+			op += line[a];
+			a++;
+		}
+		a++;
+
+		while(line[a] != ','){
+			rd += line[a];
+			a++;
+		}
+		a += 2;
+
+		while(line[a] != ','){
+			rs1 += line[a];
+			a++;
+		}
+		a += 2;
+
+		while(a < line.length()){
+			rs2 += line[a];
+			a++;
+		}
+
+		string binary_code = "";
+
+		string type = instructType[op];
+		if(type=="R"){
+			for(int k=0;k<3;k++){
+				string temp;
+				if(k==0){
+					temp = rd;
+				}
+				else if(k==1){
+					temp = rs1;
+				}
+				else{
+					temp = rs2;
+				}
+
+				if(temp[0] != 'x'){
+					temp = alias[temp];
+				}
+
+				int num = 0;
+				for(int j=1;j<temp.length();j++){
+					num = num*10 + (temp[j]-'0');
+				}
+
+				if(k==0){
+					rd = convert_deci_to_binary(num, 5);
+				}
+				else if(k==1){
+					rs1 = convert_deci_to_binary(num, 5);
+				}
+				else{
+					rs2 = convert_deci_to_binary(num, 5);
+				}
+			} 
+
+			binary_code += instructFunct7[op];
+			binary_code += rs2;
+			binary_code += rs1;
+			binary_code += instructFunct3[op];
+			binary_code += rd;
+			binary_code += instruct_opcode[type];
+		}
+
+		string machine_code = convert_32bits_to_hex(binary_code);
+		cout<<machine_code<<endl;
+	}
 
 	return 0;
 }
