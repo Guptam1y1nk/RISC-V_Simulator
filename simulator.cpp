@@ -131,6 +131,138 @@ void convertR_to_machineCode(string line){
 	cout<<machine_code<<endl;
 }
 
+void convertI_to_machineCode(string line){
+	string rd = "", rs1 = "", imm = "", op = "";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(line[a] != ','){
+		rs1 += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(a < line.length()){
+		imm += line[a];
+		a++;
+	}
+
+	for(int k=0;k<2;k++){
+		string temp;
+		if(k==0){
+			temp = rd;
+		}
+		else{
+			temp = rs1;
+		}
+
+		if(temp[0] != 'x'){
+			temp = alias[temp];
+		}
+
+		int num = 0;
+		for(int j=1;j<temp.length();j++){
+			num = num*10 + (temp[j]-'0');
+		}
+
+		if(k==0){
+			rd = convert_deci_to_binary(num, 5);
+		}
+		else{
+			rs1 = convert_deci_to_binary(num, 5);
+		}
+	} 	
+
+	imm = convert_deci_to_binary(stoi(imm), 12);
+
+	string binary_code = "";
+	binary_code += imm;
+	binary_code += rs1;
+	binary_code += instructFunct3[op];
+	binary_code += rd;
+	binary_code += instruct_opcode["I"];		
+
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+}
+
+void convertI_l_to_machineCode(string line){
+	string rd = "", rs1 = "", imm = "", op = "";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(line[a] != '('){
+		imm += line[a];
+		a++;
+	}
+	a++;
+
+	while(line[a] != ')'){
+		rs1 += line[a];
+		a++;
+	}
+
+	for(int k=0;k<2;k++){
+		string temp;
+		if(k==0){
+			temp = rd;
+		}
+		else{
+			temp = rs1;
+		}
+
+		if(temp[0] != 'x'){
+			temp = alias[temp];
+		}
+
+		int num = 0;
+		for(int j=1;j<temp.length();j++){
+			num = num*10 + (temp[j]-'0');
+		}
+
+		if(k==0){
+			rd = convert_deci_to_binary(num, 5);
+		}
+		else{
+			rs1 = convert_deci_to_binary(num, 5);
+		}
+	} 	
+
+	imm = convert_deci_to_binary(stoi(imm), 12);
+
+	string binary_code = "";
+	binary_code += imm;
+	binary_code += rs1;
+	binary_code += instructFunct3[op];
+	binary_code += rd;
+	binary_code += instruct_opcode["I_l"];		
+
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+}
+
 void convertS_to_machineCode(string line){
 	string op="",rs2="",rs1="",imm="";
 	int a = 0;
@@ -194,7 +326,7 @@ void convertS_to_machineCode(string line){
 }
 
 int main(){
-    	ifstream inputFile("input.s");
+	ifstream inputFile("input.s");
     vector<string> text;
     string line;
     while(getline(inputFile,line)){
@@ -214,9 +346,14 @@ int main(){
 		if(type=="R"){
 			convertR_to_machineCode(line);
 		}
-		
 		else if(type == "S"){
 			convertS_to_machineCode(line);
+		}
+		else if(type=="I"){
+			convertI_to_machineCode(line);
+		}
+		else if(type=="I_l"){
+			convertI_l_to_machineCode(line);
 		}
 	}
 
