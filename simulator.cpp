@@ -6,16 +6,43 @@
 #include <fstream>
 using namespace std;
 
-string convert_deci_to_binary(int n, int len){
+void twoComplement(string &s){
+	int n = s.size()-1;
+	while(s[n] != '1'){
+		n--;
+	}
+	for(int i = n-1;i>=0;i--){
+		if(s[i] == '1'){
+			s[i] = '0';
+		}
+		else if(s[i] == '0'){
+			s[i] = '1';
+		}
+	}
+}
+
+string convert_deci_to_binary(int n,int width){
 	string s;
+	bool neg = false;
+
+	if(n<0){
+		neg = true;
+		n = -n;
+	}
+
 	while(n>0){
 		s.push_back( (n%2) + '0');
 		n = n/2;
 	}
 	reverse(s.begin(),s.end());
-	int x = s.size();
-	string s1(len-x,'0');
+	
+	int len = s.size();
+	string s1(width-len,'0');
 	s = s1+s;
+	if(neg){
+		twoComplement(s);
+	}
+
 	return s;
 }
 
@@ -35,8 +62,139 @@ string convert_32bits_to_hex(string s){
 	return ans;
 }
 
+void convertR_to_machineCode(string line){
+	string op = "", rd = "", rs1 = "", rs2 = "";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+		
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(line[a] != ','){
+		rs1 += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(a < line.length()){
+		rs2 += line[a];
+		a++;
+	}
+
+	string binary_code = "";
+
+	for(int k=0;k<3;k++){
+		string temp;
+		if(k==0){
+			temp = rd;
+		}
+		else if(k==1){
+			temp = rs1;
+		}
+		else{
+			temp = rs2;
+		}
+
+		if(temp[0] != 'x'){
+			temp = alias[temp];
+		}
+		int num = 0;
+		for(int j=1;j<temp.length();j++){
+			num = num*10 + (temp[j]-'0');
+		}
+		if(k==0){
+			rd = convert_deci_to_binary(num, 5);
+		}
+		else if(k==1){
+			rs1 = convert_deci_to_binary(num, 5);
+		}
+		else{
+			rs2 = convert_deci_to_binary(num, 5);
+		}
+	} 
+
+	binary_code += instructFunct7[op];
+	binary_code += rs2;
+	binary_code += rs1;
+	binary_code += instructFunct3[op];
+	binary_code += rd;
+	binary_code += instruct_opcode["R"];
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+}
+
+void convertS_to_machineCode(string line){
+	string op="",rs2="",rs1="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+		
+	while(line[a] != ','){
+		rs2 += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(line[a] != '('){
+		imm += line[a];
+		a++;
+	}
+	a++;
+	while(line[a] != ')' ){
+		rs1 += line[a];
+		a++;
+	}
+	string binary_code = "";
+
+	for(int k=0;k<2;k++){
+		string temp;
+		if(k==0){
+			temp = rs2;
+		}
+		else{
+			temp = rs1;
+		}
+
+		if(temp[0] != 'x'){
+			temp = alias[temp];
+		}
+		int num = 0;
+		for(int j=1;j<temp.length();j++){
+			num = num*10 + (temp[j]-'0');
+		}
+		if(k==0){
+			rs2 = convert_deci_to_binary(num, 5);
+		}
+		else{
+			rs1 = convert_deci_to_binary(num, 5);
+		}
+	} 
+	string immB = convert_deci_to_binary(stoi(imm),12);
+	binary_code += immB.substr(0,7);
+	binary_code += rs2;
+	binary_code += rs1;
+	binary_code += instructFunct3[op];
+	binary_code += immB.substr(7,5);
+	binary_code += instruct_opcode["S"];
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+
+}
+
 int main(){
-	ifstream inputFile("input.s");
+    	ifstream inputFile("input.s");
     vector<string> text;
     string line;
     while(getline(inputFile,line)){
@@ -46,78 +204,20 @@ int main(){
 
 	for(int i=0;i<text.size();i++){
 		string line = text[i];
-		string op = "", rd = "", rs1 = "", rs2 = "";
-
+		string op = "";
 		int a = 0;
 		while(line[a] != ' '){
 			op += line[a];
 			a++;
 		}
-		a++;
-
-		while(line[a] != ','){
-			rd += line[a];
-			a++;
-		}
-		a += 2;
-
-		while(line[a] != ','){
-			rs1 += line[a];
-			a++;
-		}
-		a += 2;
-
-		while(a < line.length()){
-			rs2 += line[a];
-			a++;
-		}
-
-		string binary_code = "";
-
 		string type = instructType[op];
 		if(type=="R"){
-			for(int k=0;k<3;k++){
-				string temp;
-				if(k==0){
-					temp = rd;
-				}
-				else if(k==1){
-					temp = rs1;
-				}
-				else{
-					temp = rs2;
-				}
-
-				if(temp[0] != 'x'){
-					temp = alias[temp];
-				}
-
-				int num = 0;
-				for(int j=1;j<temp.length();j++){
-					num = num*10 + (temp[j]-'0');
-				}
-
-				if(k==0){
-					rd = convert_deci_to_binary(num, 5);
-				}
-				else if(k==1){
-					rs1 = convert_deci_to_binary(num, 5);
-				}
-				else{
-					rs2 = convert_deci_to_binary(num, 5);
-				}
-			} 
-
-			binary_code += instructFunct7[op];
-			binary_code += rs2;
-			binary_code += rs1;
-			binary_code += instructFunct3[op];
-			binary_code += rd;
-			binary_code += instruct_opcode[type];
+			convertR_to_machineCode(line);
 		}
-
-		string machine_code = convert_32bits_to_hex(binary_code);
-		cout<<machine_code<<endl;
+		
+		else if(type == "S"){
+			convertS_to_machineCode(line);
+		}
 	}
 
 	return 0;
