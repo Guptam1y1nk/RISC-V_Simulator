@@ -325,6 +325,113 @@ void convertS_to_machineCode(string line){
 
 }
 
+void convertB_to_machineCode(string line){
+	string op="",rs2="",rs1="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+		
+	while(line[a] != ','){
+		rs1 += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(line[a] != ','){
+		rs2 += line[a];
+		a++;
+	}
+	a += 2;
+	while(a < line.length() ){
+		imm += line[a];
+		a++;
+	}
+	string binary_code = "";
+
+	for(int k=0;k<2;k++){
+		string temp;
+		if(k==0){
+			temp = rs1;
+		}
+		else{
+			temp = rs2;
+		}
+
+		if(temp[0] != 'x'){
+			temp = alias[temp];
+		}
+		int num = 0;
+		for(int j=1;j<temp.length();j++){
+			num = num*10 + (temp[j]-'0');
+		}
+		if(k==0){
+			rs1 = convert_deci_to_binary(num, 5);
+		}
+		else{
+			rs2 = convert_deci_to_binary(num, 5);
+		}
+	} 
+	string immB = convert_deci_to_binary(stoi(imm),13);
+	binary_code += immB[0] + immB.substr(2,6);
+	binary_code += rs2;
+	binary_code += rs1;
+	binary_code += instructFunct3[op];
+	binary_code += immB.substr(8,4) + immB[1];
+	binary_code += instruct_opcode["B"];
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+
+}
+
+void convertJ_to_machineCode(string line){
+	string op="",rd="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+	}
+	a++;
+		
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+	}
+	a += 2;
+
+	while(a < line.length() ){
+		imm += line[a];
+		a++;
+	}
+
+	string binary_code = "";
+
+	if(rd[0] != 'x'){
+		rd = alias[rd];
+	}
+
+	int num = 0;
+	for(int j=1;j<rd.length();j++){
+			num = num*10 + (rd[j]-'0');
+	}
+
+	rd = convert_deci_to_binary(num, 5);
+	string immB = convert_deci_to_binary(stoi(imm),21);
+
+	binary_code += immB[0];
+	binary_code += immB.substr(10,10);
+	binary_code += immB[9];
+	binary_code += immB.substr(1,8);
+	binary_code += rd;
+	binary_code += instruct_opcode["J"];
+
+	string machine_code = convert_32bits_to_hex(binary_code);
+	cout<<machine_code<<endl;
+}
+
 int main(){
 	ifstream inputFile("input.s");
     vector<string> text;
