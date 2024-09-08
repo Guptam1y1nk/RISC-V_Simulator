@@ -489,9 +489,8 @@ void convertU_to_machineCode(string line){
 
 	num = convert_hex_to_deci(imm);
 	imm = convert_deci_to_binary(num, 32);
-	// cout<<imm<<endl;
 
-	imm = imm.substr(0, 20);
+	imm = imm.substr(12, 20);
 
 	string binary_code = "";
 	binary_code += imm;
