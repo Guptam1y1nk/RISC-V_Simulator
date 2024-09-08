@@ -61,8 +61,8 @@ int convert_hex_to_deci(string s){
 }
 
 map<string,char> binary_to_hex = {{"0000", '0'}, {"0001", '1'}, {"0010", '2'}, {"0011", '3'}, {"0100", '4'}, {"0101", '5'}, {"0110", '6'}, {"0111", '7'}, {"1000", '8'}, {"1001", '9'}, {"1010", 'a'}, {"1011", 'b'}, {"1100", 'c'}, {"1101", 'd'}, {"1110", 'e'}, {"1111", 'f'}};
-map<string,string> instructType = {{"add", "R"}, {"sub", "R"}, {"and", "R"}, {"or", "R"}, {"xor", "R"}, {"sll", "R"}, {"srl", "R"}, {"sra", "R"}, {"addi", "I"}, {"xori", "I"}, {"ori", "I"}, {"andi", "I"}, {"slli", "I"}, {"srli", "I"}, {"srai", "I"}, {"lb", "I_l"}, {"lh", "I_l"}, {"lw", "I_l"}, {"ld", "I_l"}, {"lbu", "I_l"}, {"lhu", "I_l"}, {"lwu", "I_l"}, {"sb", "S"}, {"sh", "S"}, {"sw", "S"}, {"sd", "S"}, {"beq", "B"}, {"bne", "B"}, {"blt", "B"}, {"bge", "B"},{"bltu", "B"}, {"bgeu" , "B"}, {"jal", "J"}, {"jalr", "I_J"}, {"lui", "U"}, {"auipc", "U"}};
-map<string,string> instruct_opcode = {{"R", "0110011"}, {"I", "0010011"}, {"I_l", "0000011"}, {"S", "0100011"}, {"B", "1100011"}, {"J", "1101111"}, {"I_J", "1101111"}, {"U", "0110111"}};
+map<string,string> instructType = {{"add", "R"}, {"sub", "R"}, {"and", "R"}, {"or", "R"}, {"xor", "R"}, {"sll", "R"}, {"srl", "R"}, {"sra", "R"}, {"addi", "I"}, {"xori", "I"}, {"ori", "I"}, {"andi", "I"}, {"slli", "I"}, {"srli", "I"}, {"srai", "I"}, {"lb", "I_l"}, {"lh", "I_l"}, {"lw", "I_l"}, {"ld", "I_l"}, {"lbu", "I_l"}, {"lhu", "I_l"}, {"lwu", "I_l"}, {"sb", "S"}, {"sh", "S"}, {"sw", "S"}, {"sd", "S"}, {"beq", "B"}, {"bne", "B"}, {"blt", "B"}, {"bge", "B"},{"bltu", "B"}, {"bgeu" , "B"}, {"jal", "J"}, {"jalr", "I"}, {"lui", "U"}, {"auipc", "U"}};
+map<string,string> instruct_opcode = {{"R", "0110011"}, {"I", "0010011"}, {"I_l", "0000011"}, {"S", "0100011"}, {"B", "1100011"}, {"J", "1101111"}, {"I_J", "1100111"}, {"U", "0110111"}};
 map<string,string> instructFunct3 = {{"add", "000"}, {"sub", "000"}, {"and", "111"}, {"or", "110"}, {"xor", "100"}, {"sll", "001"}, {"srl", "101"}, {"sra", "101"}, {"addi", "000"}, {"xori", "100"}, {"ori", "110"}, {"andi", "111"}, {"slli", "001"}, {"srli", "101"}, {"srai", "101"}, {"lb", "000"}, {"lh", "001"}, {"lw", "010"}, {"ld", "011"}, {"lbu", "100"}, {"lhu", "101"}, {"lwu", "110"}, {"sb", "000"}, {"sh", "001"}, {"sw", "010"}, {"sd", "011"}, {"beq", "000"}, {"bne", "001"}, {"blt", "010"}, {"bge", "011"},{"bltu", "110"}, {"bgeu" , "111"}, {"jalr", "000"}};
 map<string,string> instructFunct7 = {{"add", "0000000"}, {"sub", "0100000"}, {"and", "0000000"}, {"or", "0000000"}, {"xor", "0000000"}, {"sll", "0000000"}, {"srl", "0000000"}, {"sra", "0100000"}};
 map<string, string> alias = {{"zero", "x0"}, {"ra", "x1"}, {"sp", "x2"}, {"gp", "x3"}, {"tp", "x4"}, {"t0", "x5"}, {"t1", "x6"}, {"t2", "x7"}, {"s0", "x8"}, {"s1", "x9"}, {"a0", "x10"}, {"a1", "x11"}, {"a2", "x12"}, {"a3", "x13"}, {"a4", "x14"}, {"a5", "x15"}, {"a6", "x16"}, {"a7", "x17"}, {"s2", "x18"}, {"s3", "x19"}, {"s4", "x20"}, {"s5", "x21"}, {"s6", "x22"}, {"s7", "x23"}, {"s8", "x24"}, {"s9", "x25"}, {"s10", "x26"}, {"s11", "x27"}, {"t3", "x28"}, {"t4", "x29"}, {"t5", "x30"}, {"t6", "x31"}};
@@ -256,7 +256,12 @@ bool convertI_to_machineCode(string line, int i){
 	binary_code += rs1;
 	binary_code += instructFunct3[op];
 	binary_code += rd;
-	binary_code += instruct_opcode["I"];		
+	if(op == "jalr"){
+		binary_code += instruct_opcode["I_J"];
+	}
+	else{
+		binary_code += instruct_opcode["I"];	
+	}	
 
 
 	string machine_code = convert_32bits_to_hex(binary_code);
@@ -349,8 +354,7 @@ bool convertI_l_to_machineCode(string line, int i){
 	binary_code += rs1;
 	binary_code += instructFunct3[op];
 	binary_code += rd;
-	binary_code += instruct_opcode["I_l"];		
-
+	binary_code += instruct_opcode["I_l"];	
 
 	string machine_code = convert_32bits_to_hex(binary_code);
 	codes.push_back(machine_code);
