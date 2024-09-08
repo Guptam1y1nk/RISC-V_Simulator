@@ -67,6 +67,7 @@ map<string,string> instructFunct3 = {{"add", "000"}, {"sub", "000"}, {"and", "11
 map<string,string> instructFunct7 = {{"add", "0000000"}, {"sub", "0100000"}, {"and", "0000000"}, {"or", "0000000"}, {"xor", "0000000"}, {"sll", "0000000"}, {"srl", "0000000"}, {"sra", "0100000"}};
 map<string, string> alias = {{"zero", "x0"}, {"ra", "x1"}, {"sp", "x2"}, {"gp", "x3"}, {"tp", "x4"}, {"t0", "x5"}, {"t1", "x6"}, {"t2", "x7"}, {"s0", "x8"}, {"s1", "x9"}, {"a0", "x10"}, {"a1", "x11"}, {"a2", "x12"}, {"a3", "x13"}, {"a4", "x14"}, {"a5", "x15"}, {"a6", "x16"}, {"a7", "x17"}, {"s2", "x18"}, {"s3", "x19"}, {"s4", "x20"}, {"s5", "x21"}, {"s6", "x22"}, {"s7", "x23"}, {"s8", "x24"}, {"s9", "x25"}, {"s10", "x26"}, {"s11", "x27"}, {"t3", "x28"}, {"t4", "x29"}, {"t5", "x30"}, {"t6", "x31"}};
 map<string, int> labels;
+vector<string> codes;
 
 string convert_32bits_to_hex(string s){
 	string ans = "";
@@ -77,28 +78,44 @@ string convert_32bits_to_hex(string s){
 	return ans;
 }
 
-void convertR_to_machineCode(string line){
+bool convertR_to_machineCode(string line, int i){
 	string op = "", rd = "", rs1 = "", rs2 = "";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 		
 	while(line[a] != ','){
 		rd += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(line[a] != ','){
 		rs1 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(a < line.length()){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
 		rs2 += line[a];
 		a++;
 	}
@@ -143,31 +160,49 @@ void convertR_to_machineCode(string line){
 	binary_code += instruct_opcode["R"];
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
+
+	return false;
 }
 
-void convertI_to_machineCode(string line){
+bool convertI_to_machineCode(string line, int i){
 	string rd = "", rs1 = "", imm = "", op = "";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 
 	while(line[a] != ','){
 		rd += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(line[a] != ','){
 		rs1 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(a < line.length()){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
 		imm += line[a];
 		a++;
 	}
@@ -198,7 +233,13 @@ void convertI_to_machineCode(string line){
 		}
 	} 	
 
-	imm = convert_deci_to_binary(stoi(imm), 12);
+	int num = stoi(imm);
+	if(num < -2048 || num > 2047){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
+
+	imm = convert_deci_to_binary(num, 12);
 	if(op == "slli" || op == "srli"){
 		string temp = imm.substr(7, 5);
 		imm = "0000000";
@@ -219,33 +260,55 @@ void convertI_to_machineCode(string line){
 
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
+
+	return false;
 }
 
-void convertI_l_to_machineCode(string line){
+bool convertI_l_to_machineCode(string line, int i){
 	string rd = "", rs1 = "", imm = "", op = "";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 
 	while(line[a] != ','){
 		rd += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(line[a] != '('){
 		imm += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 
 	while(line[a] != ')'){
 		rs1 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	if(a != line.length()-1){
+		cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+		return true;
 	}
 
 	for(int k=0;k<2;k++){
@@ -274,7 +337,12 @@ void convertI_l_to_machineCode(string line){
 		}
 	} 	
 
-	imm = convert_deci_to_binary(stoi(imm), 12);
+	int num = stoi(imm);
+	if(num < -2048 || num > 2047){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
+	imm = convert_deci_to_binary(num, 12);
 
 	string binary_code = "";
 	binary_code += imm;
@@ -285,33 +353,56 @@ void convertI_l_to_machineCode(string line){
 
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
+
+	return false;
 }
 
-void convertS_to_machineCode(string line){
+bool convertS_to_machineCode(string line, int i){
 	string op="",rs2="",rs1="",imm="";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 		
 	while(line[a] != ','){
 		rs2 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(line[a] != '('){
 		imm += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 	while(line[a] != ')' ){
 		rs1 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
+	if(a != line.length()-1){
+		cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+		return true;
+	}
+
 	string binary_code = "";
 
 	for(int k=0;k<2;k++){
@@ -337,7 +428,13 @@ void convertS_to_machineCode(string line){
 			rs1 = convert_deci_to_binary(num, 5);
 		}
 	} 
-	string immB = convert_deci_to_binary(stoi(imm),12);
+
+	int num = stoi(imm);
+	if(num < -2048 || num > 2047){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
+	string immB = convert_deci_to_binary(num,12);
 	binary_code += immB.substr(0,7);
 	binary_code += rs2;
 	binary_code += rs1;
@@ -346,35 +443,58 @@ void convertS_to_machineCode(string line){
 	binary_code += instruct_opcode["S"];
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
 
+	return false;
 }
 
-void convertB_to_machineCode(string line, int curr){
+bool convertB_to_machineCode(string line, int i){
 	string op="",rs2="",rs1="",imm="";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 		
 	while(line[a] != ','){
 		rs1 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(line[a] != ','){
 		rs2 += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
+
 	while(a < line.length()){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
 		imm += line[a];
 		a++;
 	}
-	int diff = labels[imm] - curr;
+
+	if(labels.find(imm) == labels.end()){
+		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
+		return true;
+	}
+	int diff = labels[imm] - i;
 	diff *= 4;
 
 	string binary_code = "";
@@ -403,6 +523,10 @@ void convertB_to_machineCode(string line, int curr){
 		}
 	} 
 
+	if(diff < -4096 || diff > 4095){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
 	string immB = convert_deci_to_binary(diff,13);
 	binary_code += immB[0] + immB.substr(2,6);
 	binary_code += rs2;
@@ -412,30 +536,48 @@ void convertB_to_machineCode(string line, int curr){
 	binary_code += instruct_opcode["B"];
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
 
+	return false;
 }
 
-void convertJ_to_machineCode(string line, int curr){
+bool convertJ_to_machineCode(string line, int i){
 	string op="",rd="",imm="";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 		
 	while(line[a] != ','){
 		rd += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(a < line.length() ){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
 		imm += line[a];
 		a++;
 	}
-	int diff = labels[imm] - curr;
+
+	if(labels.find(imm) == labels.end()){
+		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
+		return true;
+	}
+	int diff = labels[imm] - i;
 	diff *= 4;
 
 	string binary_code = "";
@@ -460,25 +602,39 @@ void convertJ_to_machineCode(string line, int curr){
 	binary_code += instruct_opcode["J"];
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
+
+	return false;
 }
 
-void convertU_to_machineCode(string line){
+bool convertU_to_machineCode(string line, int i){
 	string op="",rd="",imm="";
 	int a = 0;
 	while(line[a] != ' '){
 		op += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a++;
 		
 	while(line[a] != ','){
 		rd += line[a];
 		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
 	}
 	a += 2;
 
 	while(a < line.length() ){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
 		imm += line[a];
 		a++;
 	}
@@ -508,7 +664,9 @@ void convertU_to_machineCode(string line){
 	binary_code += instruct_opcode["U"];
 
 	string machine_code = convert_32bits_to_hex(binary_code);
-	cout<<machine_code<<endl;
+	codes.push_back(machine_code);
+
+	return false;
 }
 
 int main(){
@@ -526,6 +684,11 @@ int main(){
 		for(int j=0;j<line.length();j++){
 			if(line[j] == ':'){
 				string l = line.substr(0, j);
+				if(labels.find(l) != labels.end()){
+					cout<<"Error found in line "<<i+1<<": Label is already declared and can't be declared twice"<<endl;
+					return 0;
+				}
+
 				labels[l] = i;
 
 				int n = line.length();
@@ -543,28 +706,52 @@ int main(){
 			op += line[a];
 			a++;
 		}
+		
+		if(instructType.find(op) == instructType.end()){
+			cout<<"Error found in line "<<i+1<<": Invalid Instruction"<<endl;
+			return 0;
+		}
+
 		string type = instructType[op];
 		if(type=="R"){
-			convertR_to_machineCode(line);
+			if(convertR_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type == "S"){
-			convertS_to_machineCode(line);
+			if(convertS_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type=="I"){
-			convertI_to_machineCode(line);
+			if(convertI_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type=="I_l"){
-			convertI_l_to_machineCode(line);
+			if(convertI_l_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type=="B"){
-			convertB_to_machineCode(line, i);
+			if(convertB_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type=="J"){
-			convertJ_to_machineCode(line, i);
+			if(convertJ_to_machineCode(line, i)){
+				return 0;
+			}
 		}
 		else if(type=="U"){
-			convertU_to_machineCode(line);
+			if(convertU_to_machineCode(line, i)){
+				return 0;
+			}
 		}
+	}
+
+	for(auto i: codes){
+		cout<<i<<endl;
 	}
 
 	return 0;
