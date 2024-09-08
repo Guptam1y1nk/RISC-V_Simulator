@@ -199,6 +199,16 @@ void convertI_to_machineCode(string line){
 	} 	
 
 	imm = convert_deci_to_binary(stoi(imm), 12);
+	if(op == "slli" || op == "srli"){
+		string temp = imm.substr(7, 5);
+		imm = "0000000";
+		imm += temp;
+	}
+	else if(op == "srai"){
+		string temp = imm.substr(7, 5);
+		imm = "0100000";
+		imm += temp;
+	}
 
 	string binary_code = "";
 	binary_code += imm;
