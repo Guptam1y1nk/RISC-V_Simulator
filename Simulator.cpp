@@ -245,6 +245,100 @@ bool execute_Itype(string line, int i){
 	return false;
 }
 
+int unsignedComp(int n, int m){
+	string n_unsigned = convert_deci_to_binary(n,16);
+	string m_unsigned = convert_deci_to_binary(m,16);
+
+	int size = n_unsigned.size();
+	for(int i=0;i<size;i++){
+		if(n_unsigned[i] == '0' && m_unsigned[i] == '1'){
+			return 1; // n<m
+		}
+		if(n_unsigned[i] == '1' && m_unsigned[i] == '0'){
+			return 0; // n>m
+		}
+	}
+	return 0; // n==m
+}
+
+bool execute_Btype(string line, int i){
+	string op="",rs2="",rs1="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	a++;
+		
+	while(line[a] != ','){
+		rs1 += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	a += 2;
+
+	while(line[a] != ','){
+		rs2 += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	a += 2;
+
+	while(a < line.length()){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
+		imm += line[a];
+		a++;
+	}
+
+	if(labels.find(imm) == labels.end()){
+		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
+		return true;
+	}
+
+	int rs1_num = getRegister(rs1);
+	int rs2_num = getRegister(rs2);
+	int diff = labels[imm] - i;
+	diff *= 4;
+
+
+	if(diff < -4096 || diff > 4095){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
+	
+	if(op == "beq" && registers[rs1_num] == registers[rs2_num]){
+		PC = diff;
+	} else if(op == "bne" && registers[rs1_num] != registers[rs2_num]){
+		PC = diff;
+	} else if(op == "blt" && registers[rs1_num] < registers[rs2_num]){
+		PC = diff;
+	} else if(op == "bge" && registers[rs1_num] >= registers[rs2_num]){
+		PC = diff;
+	} else if(op == "bltu" && (unsignedComp(registers[rs1_num] , registers[rs2_num]) == 1) ){
+		cout<<"PC+=4";
+		PC = diff;
+	} else if(op == "bgeu" && (unsignedComp(registers[rs1_num] , registers[rs2_num]) == 0) ){
+		PC = diff;
+	} else{
+		cout<<"PC+=4";
+		PC += 4;
+	}
+
+	return false;
+}
 // bool execute_I_ltype(string line, int i){
 // 	string rd = "", rs1 = "", imm = "", op = "";
 // 	int a = 0;
@@ -427,98 +521,6 @@ bool execute_Itype(string line, int i){
 // 	return false;
 // }
 
-// bool execute_Btype(string line, int i){
-// 	string op="",rs2="",rs1="",imm="";
-// 	int a = 0;
-// 	while(line[a] != ' '){
-// 		op += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a++;
-		
-// 	while(line[a] != ','){
-// 		rs1 += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
-
-// 	while(line[a] != ','){
-// 		rs2 += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
-
-// 	while(a < line.length()){
-// 		if(line[a] == ','){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
-// 			return true;
-// 		}
-// 		imm += line[a];
-// 		a++;
-// 	}
-
-// 	if(labels.find(imm) == labels.end()){
-// 		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
-// 		return true;
-// 	}
-// 	int diff = labels[imm] - i;
-// 	diff *= 4;
-
-// 	string binary_code = "";
-
-// 	for(int k=0;k<2;k++){
-// 		string temp;
-// 		if(k==0){
-// 			temp = rs1;
-// 		}
-// 		else{
-// 			temp = rs2;
-// 		}
-
-// 		if(temp[0] != 'x'){
-// 			temp = alias[temp];
-// 		}
-// 		int num = 0;
-// 		for(int j=1;j<temp.length();j++){
-// 			num = num*10 + (temp[j]-'0');
-// 		}
-// 		if(k==0){
-// 			rs1 = convert_deci_to_binary(num, 5);
-// 		}
-// 		else{
-// 			rs2 = convert_deci_to_binary(num, 5);
-// 		}
-// 	} 
-
-// 	if(diff < -4096 || diff > 4095){
-// 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
-// 		return true;
-// 	}
-// 	string immB = convert_deci_to_binary(diff,13);
-// 	binary_code += immB[0] + immB.substr(2,6);
-// 	binary_code += rs2;
-// 	binary_code += rs1;
-// 	binary_code += instructFunct3[op];
-// 	binary_code += immB.substr(8,4) + immB[1];
-// 	binary_code += instruct_opcode["B"];
-
-// 	string machine_code = convert_32bits_to_hex(binary_code);
-// 	codes.push_back(machine_code);
-
-// 	return false;
-// }
 
 // bool execute_Jtype(string line, int i){
 // 	string op="",rd="",imm="";
@@ -725,6 +727,12 @@ int main(){
 				 		return 0;
 				 	}
 				}
+				else if(type=="B"){
+				 	if(execute_Btype(line, i)){
+				 		return 0;
+				 	}
+				}
+
 				// else if(type == "S"){
 				// 	if(execute_Stype(line, i)){
 				// 		return 0;
@@ -733,11 +741,6 @@ int main(){
 				
 				// else if(type=="I_l"){
 				// 	if(execute_I_ltype(line, i)){
-				// 		return 0;
-				// 	}
-				// }
-				// else if(type=="B"){
-				// 	if(execute_Btype(line, i)){
 				// 		return 0;
 				// 	}
 				// }
