@@ -173,110 +173,75 @@ bool execute_Rtype(string line, int i){
 	return false;
 }
 
-// bool execute_Itype(string line, int i){
-// 	string rd = "", rs1 = "", imm = "", op = "";
-// 	int a = 0;
-// 	while(line[a] != ' '){
-// 		op += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a++;
+bool execute_Itype(string line, int i){
+	string rd = "", rs1 = "", imm = "", op = "";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expected value"<<endl;
+			return true;
+		}
+	}
+	a++;
 
-// 	while(line[a] != ','){
-// 		rd += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expected value"<<endl;
+			return true;
+		}
+	}
+	a += 2;
 
-// 	while(line[a] != ','){
-// 		rs1 += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
+	while(line[a] != ','){
+		rs1 += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expected value"<<endl;
+			return true;
+		}
+	}
+	a += 2;
 
-// 	while(a < line.length()){
-// 		if(line[a] == ','){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
-// 			return true;
-// 		}
-// 		imm += line[a];
-// 		a++;
-// 	}
+	while(a < line.length()){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expected value"<<endl;
+			return true;
+		}
+		imm += line[a];
+		a++;
+	}
+	
+	int rs1_num = getRegister(rs1);
+	int rd_num = getRegister(rd);
+	
+	int num = stoi(imm);
+	if(num < -2048 || num > 2047){
+		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
+		return true;
+	}
 
-// 	for(int k=0;k<2;k++){
-// 		string temp;
-// 		if(k==0){
-// 			temp = rd;
-// 		}
-// 		else{
-// 			temp = rs1;
-// 		}
+	imm = convert_deci_to_binary(num, 12);
+	
+	if(op == "addi"){
+		registers[rd_num] = registers[rs1_num] + num;
+	} else if(op == "andi"){
+		registers[rd_num] = registers[rs1_num] & num;
+	} else if(op == "ori"){
+		registers[rd_num] = registers[rs1_num] | num;
+	} else if(op == "slli"){
+		registers[rd_num] = registers[rs1_num] << num;
+	} else if(op == "srli"){
+		registers[rd_num] = registers[rs1_num] >> num;
+	} else if(op == "srai"){
+		registers[rd_num] = registers[rs1_num] >> num;
+	}
 
-// 		if(temp[0] != 'x'){
-// 			temp = alias[temp];
-// 		}
-
-// 		int num = 0;
-// 		for(int j=1;j<temp.length();j++){
-// 			num = num*10 + (temp[j]-'0');
-// 		}
-
-// 		if(k==0){
-// 			rd = convert_deci_to_binary(num, 5);
-// 		}
-// 		else{
-// 			rs1 = convert_deci_to_binary(num, 5);
-// 		}
-// 	} 	
-
-// 	int num = stoi(imm);
-// 	if(num < -2048 || num > 2047){
-// 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
-// 		return true;
-// 	}
-
-// 	imm = convert_deci_to_binary(num, 12);
-// 	if(op == "slli" || op == "srli"){
-// 		string temp = imm.substr(7, 5);
-// 		imm = "0000000";
-// 		imm += temp;
-// 	}
-// 	else if(op == "srai"){
-// 		string temp = imm.substr(7, 5);
-// 		imm = "0100000";
-// 		imm += temp;
-// 	}
-
-// 	string binary_code = "";
-// 	binary_code += imm;
-// 	binary_code += rs1;
-// 	binary_code += instructFunct3[op];
-// 	binary_code += rd;
-// 	if(op == "jalr"){
-// 		binary_code += instruct_opcode["I_J"];
-// 	}
-// 	else{
-// 		binary_code += instruct_opcode["I"];	
-// 	}	
-
-
-// 	string machine_code = convert_32bits_to_hex(binary_code);
-// 	codes.push_back(machine_code);
-
-// 	return false;
-// }
+	return false;
+}
 
 // bool execute_I_ltype(string line, int i){
 // 	string rd = "", rs1 = "", imm = "", op = "";
