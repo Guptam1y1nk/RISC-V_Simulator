@@ -151,6 +151,11 @@ bool execute_Rtype(string line, int i){
 	int rs2_num = getRegister(rs2);
 	int rd_num = getRegister(rd); 
 
+	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 || rd_num < 0 || rd_num>31){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
+		
 	if (op == "add") {
 		registers[rd_num] = registers[rs1_num] + registers[rs2_num];
 	} else if (op == "sub") {
@@ -219,7 +224,12 @@ bool execute_Itype(string line, int i){
 	
 	int rs1_num = getRegister(rs1);
 	int rd_num = getRegister(rd);
-	
+
+	if(rs1_num < 0 || rs1_num>31 || rd_num < 0 || rd_num>31){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
+
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
@@ -313,6 +323,10 @@ bool execute_Btype(string line, int i){
 	int diff = labels[imm] - i;
 	diff *= 4;
 
+	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 ){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
 
 	if(diff < -4096 || diff > 4095){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
