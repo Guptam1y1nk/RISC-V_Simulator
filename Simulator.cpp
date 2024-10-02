@@ -342,12 +342,10 @@ bool execute_Btype(string line, int i){
 	} else if(op == "bge" && registers[rs1_num] >= registers[rs2_num]){
 		PC = diff;
 	} else if(op == "bltu" && (unsignedComp(registers[rs1_num] , registers[rs2_num]) == 1) ){
-		cout<<"PC+=4";
 		PC = diff;
 	} else if(op == "bgeu" && (unsignedComp(registers[rs1_num] , registers[rs2_num]) == 0) ){
 		PC = diff;
 	} else{
-		cout<<"PC+=4";
 		PC += 4;
 	}
 
