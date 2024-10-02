@@ -10,7 +10,7 @@ using namespace std;
 #define ll long long
 
 ll registers[32];
-bitset<8> mem[40000];
+bitset<8> mem[0x40000];
 ll instruction_pos = 0;
 
 void twoComplement(string &s){
@@ -456,7 +456,7 @@ int unsignedComp(int n, int m){
 	return 0;
 }
 
-bool execute_Btype(string line, int i){
+pair<int, bool> execute_Btype(string line, int i){
 	string op="",rs2="",rs1="",imm="";
 	int a = 0;
 	while(line[a] != ' '){
@@ -464,7 +464,7 @@ bool execute_Btype(string line, int i){
 		a++;
 		if(a == line.length()){
 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-			return true;
+			return {-1, true};
 		}
 	}
 	a++;
@@ -474,7 +474,7 @@ bool execute_Btype(string line, int i){
 		a++;
 		if(a == line.length()){
 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-			return true;
+			return {-1, true};
 		}
 	}
 	a += 2;
@@ -484,7 +484,7 @@ bool execute_Btype(string line, int i){
 		a++;
 		if(a == line.length()){
 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-			return true;
+			return {-1, true};
 		}
 	}
 	a += 2;
@@ -492,7 +492,7 @@ bool execute_Btype(string line, int i){
 	while(a < line.length()){
 		if(line[a] == ','){
 			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
-			return true;
+			return {-1, true};
 		}
 		imm += line[a];
 		a++;
@@ -500,7 +500,7 @@ bool execute_Btype(string line, int i){
 
 	if(labels.find(imm) == labels.end()){
 		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
-		return true;
+		return {-1, true};
 	}
 
 	int rs1_num = getRegister(rs1);
@@ -510,12 +510,12 @@ bool execute_Btype(string line, int i){
 
 	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 ){
 		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
-		return true;
+		return {-1, true};
 	}
 
 	if(diff < -4096 || diff > 4095){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
-		return true;
+		return {-1, true};
 	}
 	
 	if(op == "beq" && registers[rs1_num] == registers[rs2_num]){
@@ -534,7 +534,7 @@ bool execute_Btype(string line, int i){
 		instruction_pos++;
 	}
 
-	return false;
+	return {instruction_pos, false};
 }
 
 // bool execute_Jtype(string line, int i){
@@ -695,6 +695,7 @@ void loadCommand(string filename){
 	}
 
 	memset(registers, 0, 32*sizeof(registers[0]));
+	memset(mem, 0, 0x40000*sizeof(mem[0]));
 }
 
 int main(){
@@ -757,8 +758,12 @@ int main(){
 					}
 				}
 				else if(type=="B"){
-					if(execute_Btype(line, i)){
+					pair<int, bool> ans = execute_Btype(line, i);
+					if(ans.second){
 						return 0;
+					}
+					else{
+						i = ans.first - 1;
 					}
 				}
 				// else if(type=="J"){
