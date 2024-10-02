@@ -10,7 +10,7 @@ using namespace std;
 #define ll long long
 
 ll registers[32];
-
+ll PC = 0;
 void twoComplement(string &s){
 	int n = s.size()-1;
 	while(s[n] != '1'){
@@ -105,6 +105,7 @@ int getRegister(string temp){
 }
 
 bool execute_Rtype(string line, int i){
+	PC += 4;
 	string op = "", rd = "", rs1 = "", rs2 = "";
 	int a = 0;
 	while(line[a] != ' '){
@@ -174,6 +175,7 @@ bool execute_Rtype(string line, int i){
 }
 
 bool execute_Itype(string line, int i){
+	PC += 4;
 	string rd = "", rs1 = "", imm = "", op = "";
 	int a = 0;
 	while(line[a] != ' '){
@@ -679,7 +681,6 @@ void loadCommand(string filename){
 }
 
 int main(){
-	ll PC = 0;
 	while(1){
 		string command;
 		getline(cin, command);
@@ -750,7 +751,6 @@ int main(){
 				// 		return 0;
 				// 	}
 				// }
-				PC += 4;
 			}
 			cout<<endl;
 		}
