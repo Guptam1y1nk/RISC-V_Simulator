@@ -719,16 +719,17 @@ int main(){
 						return 0;
 					}
 				}
+				else if(type=="I"){
+				 	if(execute_Itype(line, i)){
+				 		return 0;
+				 	}
+				}
 				// else if(type == "S"){
 				// 	if(execute_Stype(line, i)){
 				// 		return 0;
 				// 	}
 				// }
-				// else if(type=="I"){
-				// 	if(execute_Itype(line, i)){
-				// 		return 0;
-				// 	}
-				// }
+				
 				// else if(type=="I_l"){
 				// 	if(execute_I_ltype(line, i)){
 				// 		return 0;
