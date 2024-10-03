@@ -154,7 +154,10 @@ bool execute_Rtype(string line, int i){
 	int rs1_num = getRegister(rs1);
 	int rs2_num = getRegister(rs2);
 	int rd_num = getRegister(rd); 
-
+	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 || rd_num < 0 || rd_num>31 ){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
 	if (op == "add") {
 		registers[rd_num] = registers[rs1_num] + registers[rs2_num];
 	} else if (op == "sub") {
@@ -223,7 +226,10 @@ bool execute_Itype(string line, int i){
 	
 	int rs1_num = getRegister(rs1);
 	int rd_num = getRegister(rd);
-	
+	if(rs1_num < 0 || rs1_num>31 || rd_num < 0 || rd_num>31 ){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
@@ -296,7 +302,11 @@ bool execute_I_ltype(string line, int i){
 
 	int rs1_num = getRegister(rs1);
 	int rd_num = getRegister(rd);
-
+	if(rs1_num < 0 || rs1_num>31 || rd_num < 0 || rd_num>31 ){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
+	
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
@@ -391,6 +401,11 @@ bool execute_Stype(string line, int i){
 
 	int rs1_num = getRegister(rs1);
 	int rs2_num = getRegister(rs2);
+	
+	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 ){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return true;
+	}
 
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
@@ -537,71 +552,58 @@ pair<int, bool> execute_Btype(string line, int i){
 	return {instruction_pos, false};
 }
 
-// bool execute_Jtype(string line, int i){
-// 	string op="",rd="",imm="";
-// 	int a = 0;
-// 	while(line[a] != ' '){
-// 		op += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a++;
+pair<int,bool> execute_Jtype(string line, int i){
+	string op="",rd="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return {-1,true};
+		}
+	}
+	a++;
 		
-// 	while(line[a] != ','){
-// 		rd += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return {-1,true};
+		}
+	}
+	a += 2;
 
-// 	while(a < line.length() ){
-// 		if(line[a] == ','){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
-// 			return true;
-// 		}
-// 		imm += line[a];
-// 		a++;
-// 	}
+	while(a < line.length() ){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return {-1,true};
+		}
+		imm += line[a];
+		a++;
+	}
 
-// 	if(labels.find(imm) == labels.end()){
-// 		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
-// 		return true;
-// 	}
-// 	int diff = labels[imm] - i;
-// 	diff *= 4;
+	if(labels.find(imm) == labels.end()){
+		cout<<"Error found in line "<<i+1<<": Label not defined"<<endl;
+		return {-1,true};
+	}
+	int diff = labels[imm] - i;
+	diff *= 4;
+	int jump_index = labels[imm];
 
-// 	string binary_code = "";
+	int rd_num = getRegister(rd);
+	if(rd_num < 0 || rd_num>31){
+		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
+		return {-1,true};
+	}
 
-// 	if(rd[0] != 'x'){
-// 		rd = alias[rd];
-// 	}
-
-// 	int num = 0;
-// 	for(int j=1;j<rd.length();j++){
-// 			num = num*10 + (rd[j]-'0');
-// 	}
-
-// 	rd = convert_deci_to_binary(num, 5);
-// 	string immB = convert_deci_to_binary(diff ,21);
-
-// 	binary_code += immB[0];
-// 	binary_code += immB.substr(10,10);
-// 	binary_code += immB[9];
-// 	binary_code += immB.substr(1,8);
-// 	binary_code += rd;
-// 	binary_code += instruct_opcode["J"];
-
-// 	string machine_code = convert_32bits_to_hex(binary_code);
-// 	codes.push_back(machine_code);
-
-// 	return false;
-// }
+	if(op == "jal"){
+		registers[rd_num] = instruction_pos + 1;
+		instruction_pos = jump_index;
+	}
+	return {instruction_pos,false};
+}
 
 // bool execute_Utype(string line, int i){
 // 	string op="",rd="",imm="";
