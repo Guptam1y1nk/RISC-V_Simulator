@@ -89,6 +89,23 @@ string getPC(ll PC){
 	return ans;
 }
 
+string toHex(long num1){
+	if (num1 == 0)
+		return "0";
+	long num = num1;
+	string s = "";
+	while (num) {
+		int temp = num % 16;
+		if (temp <= 9)
+		s += (48 + temp);
+		else
+		s += (55 + temp);
+		num = num / 16;
+	}
+	reverse(s.begin(), s.end());
+	return s;
+}
+
 map<string,string> instructType = {{"add", "R"}, {"sub", "R"}, {"and", "R"}, {"or", "R"}, {"xor", "R"}, {"sll", "R"}, {"srl", "R"}, {"sra", "R"}, {"addi", "I"}, {"xori", "I"}, {"ori", "I"}, {"andi", "I"}, {"slli", "I"}, {"srli", "I"}, {"srai", "I"}, {"lb", "I_l"}, {"lh", "I_l"}, {"lw", "I_l"}, {"ld", "I_l"}, {"lbu", "I_l"}, {"lhu", "I_l"}, {"lwu", "I_l"}, {"sb", "S"}, {"sh", "S"}, {"sw", "S"}, {"sd", "S"}, {"beq", "B"}, {"bne", "B"}, {"blt", "B"}, {"bge", "B"},{"bltu", "B"}, {"bgeu" , "B"}, {"jal", "J"}, {"jalr", "I_l"}, {"lui", "U"}, {"auipc", "U"}};
 map<string, string> alias = {{"zero", "x0"}, {"ra", "x1"}, {"sp", "x2"}, {"gp", "x3"}, {"tp", "x4"}, {"t0", "x5"}, {"t1", "x6"}, {"t2", "x7"}, {"s0", "x8"}, {"s1", "x9"}, {"a0", "x10"}, {"a1", "x11"}, {"a2", "x12"}, {"a3", "x13"}, {"a4", "x14"}, {"a5", "x15"}, {"a6", "x16"}, {"a7", "x17"}, {"s2", "x18"}, {"s3", "x19"}, {"s4", "x20"}, {"s5", "x21"}, {"s6", "x22"}, {"s7", "x23"}, {"s8", "x24"}, {"s9", "x25"}, {"s10", "x26"}, {"s11", "x27"}, {"t3", "x28"}, {"t4", "x29"}, {"t5", "x30"}, {"t6", "x31"}};
 map<string, int> labels;
@@ -154,10 +171,7 @@ bool execute_Rtype(string line, int i){
 	int rs1_num = getRegister(rs1);
 	int rs2_num = getRegister(rs2);
 	int rd_num = getRegister(rd); 
-	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 || rd_num < 0 || rd_num>31 ){
-		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
-		return true;
-	}
+
 	if (op == "add") {
 		registers[rd_num] = registers[rs1_num] + registers[rs2_num];
 	} else if (op == "sub") {
@@ -226,10 +240,7 @@ bool execute_Itype(string line, int i){
 	
 	int rs1_num = getRegister(rs1);
 	int rd_num = getRegister(rd);
-	if(rs1_num < 0 || rs1_num>31 || rd_num < 0 || rd_num>31 ){
-		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
-		return true;
-	}
+	
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
@@ -302,18 +313,14 @@ bool execute_I_ltype(string line, int i){
 
 	int rs1_num = getRegister(rs1);
 	int rd_num = getRegister(rd);
-	if(rs1_num < 0 || rs1_num>31 || rd_num < 0 || rd_num>31 ){
-		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
-		return true;
-	}
-	
+
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
 		cout<<"Error found in line "<<i+1<<": Immediate value lies outside the allowed range"<<endl;
 		return true;
 	}
 
-	ll pos = registers[rs1_num] + num;
+	ll pos = registers[rs1_num] + num - 0x10000;
 	ll data = 0;
 
 	if(op=="lb"){
@@ -321,7 +328,9 @@ bool execute_I_ltype(string line, int i){
 		for(int i=0;i>=0;i--){
 			byte = mem[pos+i].to_ulong();
 			data += byte;
-			data = data << 8;
+			if(i>0){
+				data = data << 8;
+			}
 		}
 	}
 	else if(op=="lh"){
@@ -329,7 +338,9 @@ bool execute_I_ltype(string line, int i){
 		for(int i=1;i>=0;i--){
 			byte = mem[pos+i].to_ulong();
 			data += byte;
-			data = data << 8;
+			if(i>0){
+				data = data << 8;
+			}
 		}
 	}
 	else if(op=="lw"){
@@ -337,7 +348,9 @@ bool execute_I_ltype(string line, int i){
 		for(int i=3;i>=0;i--){
 			byte = mem[pos+i].to_ulong();
 			data += byte;
-			data = data << 8;
+			if(i>0){
+				data = data << 8;
+			}
 		}
 	}
 	else if(op=="ld"){
@@ -345,9 +358,12 @@ bool execute_I_ltype(string line, int i){
 		for(int i=7;i>=0;i--){
 			byte = mem[pos+i].to_ulong();
 			data += byte;
-			data = data << 8;
+			if(i>0){
+				data = data << 8;
+			}
 		}
 	}
+
 	registers[rd_num] = data;
 
 	return false;
@@ -401,11 +417,6 @@ bool execute_Stype(string line, int i){
 
 	int rs1_num = getRegister(rs1);
 	int rs2_num = getRegister(rs2);
-	
-	if(rs1_num < 0 || rs1_num>31 || rs2_num < 0 || rs2_num>31 ){
-		cout<<"Error found in line "<<i+1<<": This code doesn't support more than 32 Registers"<<endl;
-		return true;
-	}
 
 	int num = stoi(imm);
 	if(num < -2048 || num > 2047){
@@ -413,13 +424,13 @@ bool execute_Stype(string line, int i){
 		return true;
 	}
 
-	ll pos = registers[rs1_num] + num;
+	ll pos = registers[rs1_num] + num - 0x10000;
 	ll data = registers[rs2_num];
 
 	if(op=="sb"){
 		int byte = 0;
-		for(int i=1;i<=2;i++){
-			byte = (data & (1<<8 - 1));
+		for(int i=1;i<=1;i++){
+			byte = (data & (0b11111111));
 			mem[pos++] = byte; 
 			data = data >> 8;
 		}
@@ -427,7 +438,7 @@ bool execute_Stype(string line, int i){
 	else if(op=="sh"){
 		int byte = 0;
 		for(int i=1;i<=2;i++){
-			byte = (data & (1<<8 - 1));
+			byte = (data & (0b11111111));
 			mem[pos++] = byte; 
 			data = data >> 8;
 		}
@@ -435,7 +446,7 @@ bool execute_Stype(string line, int i){
 	else if(op=="sw"){
 		int byte = 0;
 		for(int i=1;i<=4;i++){
-			byte = (data & (1<<8 - 1));
+			byte = (data & (0b11111111));
 			mem[pos++] = byte; 
 			data = data >> 8;
 		}
@@ -443,7 +454,7 @@ bool execute_Stype(string line, int i){
 	else if(op=="sd"){
 		int byte = 0;
 		for(int i=1;i<=8;i++){
-			byte = (data & (1<<8 - 1));
+			byte = (data & (0b11111111));
 			mem[pos++] = byte; 
 			data = data >> 8;
 		}
@@ -605,67 +616,71 @@ pair<int,bool> execute_Jtype(string line, int i){
 	return {instruction_pos,false};
 }
 
-// bool execute_Utype(string line, int i){
-// 	string op="",rd="",imm="";
-// 	int a = 0;
-// 	while(line[a] != ' '){
-// 		op += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a++;
+ll getAddress(string imm){
+	ll address = 0;
+	int n = imm.length();
+
+	for(int i=2;i<n;i++){
+		int val = 0;
+		if(imm[i]>='0' && imm[i]<='9'){
+			val = imm[i] - '0';
+		}
+		else{
+			val = (imm[i] - 'a') + 10;
+		}
+		address = address*16 + val;
+	}
+
+	return address;
+}
+
+bool execute_Utype(string line, int i){
+	instruction_pos++;
+	string op="",rd="",imm="";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	a++;
 		
-// 	while(line[a] != ','){
-// 		rd += line[a];
-// 		a++;
-// 		if(a == line.length()){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-// 			return true;
-// 		}
-// 	}
-// 	a += 2;
+	while(line[a] != ','){
+		rd += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+	a += 2;
 
-// 	while(a < line.length() ){
-// 		if(line[a] == ','){
-// 			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
-// 			return true;
-// 		}
-// 		imm += line[a];
-// 		a++;
-// 	}
+	while(a < line.length() ){
+		if(line[a] == ','){
+			cout<<"Error found in line "<<i+1<<": Number of operands exceed the expacted value"<<endl;
+			return true;
+		}
+		imm += line[a];
+		a++;
+	}
 
-// 	if(rd[0] != 'x'){
-// 		rd = alias[rd];
-// 	}
+	ll num = getAddress(imm);
+	int rd_num = getRegister(rd);
+	num *= pow(16, 3);
 
-// 	int num = 0;
-// 	for(int j=1;j<rd.length();j++){
-// 			num = num*10 + (rd[j]-'0');
-// 	}
+	if(op=="lui"){
+		registers[rd_num] = num;
+	}
+	else if(op=="auipc"){
+		num += (instruction_pos*4);
+		registers[rd_num] = num;
+	}
 
-// 	rd = convert_deci_to_binary(num, 5);
-
-// 	int n = imm.length();
-// 	imm = imm.substr(2, n-2);
-
-// 	num = convert_hex_to_deci(imm);
-// 	imm = convert_deci_to_binary(num, 32);
-
-// 	imm = imm.substr(12, 20);
-
-// 	string binary_code = "";
-// 	binary_code += imm;
-// 	binary_code += rd;
-// 	binary_code += instruct_opcode["U"];
-
-// 	string machine_code = convert_32bits_to_hex(binary_code);
-// 	codes.push_back(machine_code);
-
-// 	return false;
-// }
+	return false;
+}
 
 void loadCommand(string filename){
 	ifstream inputFile(filename);
@@ -700,6 +715,68 @@ void loadCommand(string filename){
 	memset(mem, 0, 0x40000*sizeof(mem[0]));
 }
 
+bool runInstruction(int i){
+	string line = text[i];
+	cout<<"Executed "<<line<<"; PC="<<getPC(i)<<endl;
+	string op = "";
+	int a = 0;
+	while(line[a] != ' '){
+		op += line[a];
+		a++;
+		if(a == line.length()){
+			cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
+			return true;
+		}
+	}
+
+	string type = instructType[op];
+	if(type=="R"){
+		if(execute_Rtype(line, i)){
+			return true;
+		}
+	}
+	else if(type == "S"){
+		if(execute_Stype(line, i)){
+			return true;
+		}
+	}
+	else if(type=="I"){
+		if(execute_Itype(line, i)){
+			return true;
+		}
+	}
+	else if(type=="I_l"){
+		if(execute_I_ltype(line, i)){
+			return true;
+		}
+	}
+	else if(type=="B"){
+		pair<int, bool> ans = execute_Btype(line, i);
+		if(ans.second){
+			return true;
+		}
+		else{
+			i = ans.first - 1;
+		}
+	}
+	else if(type=="J"){
+		pair<int, bool> ans = execute_Jtype(line, i);
+		if(ans.second){
+			return true;
+		}
+		else{
+			i = ans.first - 1;
+		}
+	}
+	else if(type=="U"){
+		if(execute_Utype(line, i)){
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int main(){
 	while(1){
 		string command;
@@ -724,60 +801,50 @@ int main(){
 				continue;
 			}
 			for(int i=instruction_pos;i<text.size();i++){
-				string line = text[i];
-				cout<<"Executed "<<line<<"; PC="<<getPC(i)<<endl;
-				string op = "";
-				int a = 0;
-				while(line[a] != ' '){
-					op += line[a];
-					a++;
-					if(a == line.length()){
-						cout<<"Error found in line "<<i+1<<": Number of operands are less the expacted value"<<endl;
-						return true;
-					}
+				if(runInstruction(i)){
+					return 0;
 				}
+			}
+			cout<<endl;
+		}
+		else if(operation == "step"){
+			if(instruction_pos == text.size()){
+				cout<<"Nothing to step"<<endl<<endl;
+			}
+			else{
+				if(runInstruction(instruction_pos)){
+					return 0;
+				}
+				cout<<endl;
+			}
+		}
+		else if(operation == "mem"){
+			string temp = "";
+			i++;
+			while(i<n && command[i] != ' '){
+				temp += command[i++];
+			}
+			int address = getAddress(temp);
 
-				string type = instructType[op];
-				if(type=="R"){
-					if(execute_Rtype(line, i)){
-						cout<<"Called"<<endl;
-						return 0;
-					}
-				}
-				else if(type == "S"){
-					if(execute_Stype(line, i)){
-						return 0;
-					}
-				}
-				else if(type=="I"){
-					if(execute_Itype(line, i)){
-						return 0;
-					}
-				}
-				else if(type=="I_l"){
-					if(execute_I_ltype(line, i)){
-						return 0;
-					}
-				}
-				else if(type=="B"){
-					pair<int, bool> ans = execute_Btype(line, i);
-					if(ans.second){
-						return 0;
-					}
-					else{
-						i = ans.first - 1;
-					}
-				}
-				// else if(type=="J"){
-				// 	if(execute_Jtype(line, i)){
-				// 		return 0;
-				// 	}
-				// }
-				// else if(type=="U"){
-				// 	if(execute_Utype(line, i)){
-				// 		return 0;
-				// 	}
-				// }
+			temp = "";
+			i++;
+			while(i<n){
+				temp += command[i++];
+			}
+			int num = stoi(temp);
+
+			int start = address - 0x10000;
+			for(int i=0;i<num;i++){
+				cout<<"Memory[0x";
+				long long val = address + i;
+				stringstream ss;
+				ss << hex << val;
+				string res(ss.str());
+				cout<<res<<"] = 0x";
+
+				long byte = mem[start+i].to_ulong();
+				string hexval = toHex(byte);
+				cout<<hexval<<endl;
 			}
 			cout<<endl;
 		}
