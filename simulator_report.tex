@@ -1,0 +1,85 @@
+\documentclass{article}
+
+\begin{document}
+
+\title{
+	Lab 4 : RISC-V Simulator Report
+}
+\author{ Gagan Singla and Mayank Gupta  
+}
+\maketitle
+	\section{Basic Maps and Functions}
+	We have used hash maps to create a mapping between the instruction with its correspoding instruction type and also to easily access registers through their aliases.
+	\subsection{Basic mapping developed}
+	\begin{enumerate}
+		\item instructType : Develop a mapping between instruction to its corresponding instruction type.
+		\item alias : Develop a mapping between alias of register to its standard naming format x0-x31.
+	\end{enumerate}
+	\subsection{Basic Arrays developed}
+	\begin{enumerate}
+		\item registers : Constructed a long long array of 32 length which will serve as our registers.
+		\item mem : Constructed a array of vectors of length 0x40000 using bitset where each vector length is 8 which will serve as our memory. 
+	\end{enumerate}
+	\subsection{Utility Functions used}
+	\begin{enumerate}
+		\item twoComplement : To convert the input binary string into its two's complement.
+		\item convert\_deci\_to\_binary : To convert the input decimal number into a specific length binary string.
+		\item getPC : To covert the long long interger value of PC to a string of PC.
+		\item getRegister : To extract the register number from string of register and also from its alias form.
+		\item unsignedComp : To compare two unsigned numbers (used in the case of bgeu/bltu).
+		\item We have also used some in-built functions like stoi(string to integer). 
+	\end{enumerate}
+	\section{Input Handling}
+	We are first finding what command are we required to perform and based on that we are performing our task.
+	\subsection{Load Command}
+	\begin{enumerate}
+		\item Upon getting load command, we are first initializing our initialising PC, registers and memory values to 0.
+		\item We are reading the whole input.s file and storing labels in a map named 'labels' and also check if that same label is not multiple times.
+	\end{enumerate}
+
+	\subsection{Run Command}
+	\begin{enumerate}
+		\item We are performing every operation line by line and printing the PC of the line being executed.
+		\item Depending on the instruction type, we have made functions which will do their job of updating registers, memory ortransfering the PC.
+	\end{enumerate}
+	\subsection{Regs Command}
+	Prints the value stored in the register in hexadecimal format
+	\subsection{Exit Command}
+	Gracefully exits the simulator
+	\subsection{step Command}
+	Runs a particular operation(depending on the position of program counter) by using instruction specific functions.
+	\subsection{mem Command}
+	Prints memory locations starting from the address in the data section.
+	\subsection{Break Command}
+	We are making a set containing the line number where we have to break the code while using run command. While using run command we check if our present line number is present in the set or not.If it is, we stop there.
+	\subsection{del break Command}
+	Removes that particular line from the set.
+
+	\section{Executing Different Instructions}
+	\subsection{R Type Instruction}
+	We are extracting operation and register number on the operation is gonna be performed and simply executing the operation.
+	\subsection{I Type Instruction}
+	\subsubsection{Without Memory}
+	We will extract the operation, register numbers and immediate value from the instruction and then convert immediate value's string into integer type and simply execute the operation.
+	\subsubsection{With Memory}
+	We will extract the memory location, source and output register number from the instruction and then based upon whether we have to load word, byte, halfword or doubleword, we will run the loop and load the data(in a chunk of 1 byte) from the memory into register.
+	\subsection{S Type Instruction}
+	We will extract the memory location, source and output register number from the instruction and then based upon whether we have to store word, byte, halfword or doubleword, we will run the loop and store the value of register into  the memory.
+	\subsection{B Type Instruction}
+	We will extract the two registers whose value we have to compare and the immediate value which will decide PC depending on the condition. We will compare both registers value and we have also employed unsignedComp function for bgeu and bltu operation. Depending on the result,we will decide on whether to increase our PC by 4 or by immediate value.
+	\subsection{J type Instruction}
+	We will extract the register value and immediate value from the instruction and then simply update our PC by immediate value and keep the value of next line number in the register.
+	\subsection{U type Instruction}
+	We will extract the register value and immediate value from the instruction and then update the register value depending on the operation using PC and left shifting of the immediate value by 12 bits. 
+
+	\section{Assumptions}
+	\begin{enumerate}
+		\item 
+	\end{enumerate}
+
+	\section{Testing}
+	\begin{enumerate}
+		\item We checked each operation one by one by covering corner cases and negative values also.
+		\item We checked both the codes given in the problem statement.
+	\end{enumerate}
+	\end{document}
