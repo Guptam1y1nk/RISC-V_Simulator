@@ -13,13 +13,65 @@ ll registers[32];
 bitset<8> mem[0x50000];
 ll instruction_pos = 0;
 ll free_index = 0;
+string input_filename;
 
 int rows = 0, cols = 0, ass = 0;
 ll*** cache;
 int enable = 0;
 int accesses = 0, hits = 0, misses = 0;
 string cache_type;
+string write_type;
 int time_stamp_access = 0, time_stamp_misses = 0;
+vector<string> cacheOperations;
+
+string toHex(long num1){
+	if (num1 == 0)
+		return "0";
+	long num = num1;
+	string s = "";
+	while (num) {
+		int temp = num % 16;
+		if (temp <= 9)
+		s += (48 + temp);
+		else
+		s += (55 + temp);
+		num = num / 16;
+	}
+	reverse(s.begin(), s.end());
+	return s;
+}
+
+string HexConversion(int num1){
+	if (num1 == 0)
+		return "0x0";
+	int num = num1;
+	string s = "";
+	while (num) {
+		int temp = num % 16;
+		if (temp <= 9)
+		s += (48 + temp);
+		else
+		s += (55 + temp);
+		num = num / 16;
+	}
+	reverse(s.begin(), s.end());
+
+	s = "0x" + s;
+
+	return s;
+}
+
+void hit_log(int address, int row_num, int tag, int i){
+	string temp = "W: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Hit, Tag: " + HexConversion(tag) + ", ";
+	temp += (cache[row_num][i][2] == 0) ? "Clean" : "Dirty";
+	cacheOperations.push_back(temp);
+}
+
+void miss_log(int address, int row_num, int tag){
+	string temp = "W: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Miss, Tag: " + HexConversion(tag) + ", ";
+	temp += "Clean";
+	cacheOperations.push_back(temp);
+}
 
 int replace_random(){
 	int index = rand()%ass;
@@ -128,23 +180,6 @@ string getPC(ll PC){
 	ans += PC_num;
 
 	return ans;
-}
-
-string toHex(long num1){
-	if (num1 == 0)
-		return "0";
-	long num = num1;
-	string s = "";
-	while (num) {
-		int temp = num % 16;
-		if (temp <= 9)
-		s += (48 + temp);
-		else
-		s += (55 + temp);
-		num = num / 16;
-	}
-	reverse(s.begin(), s.end());
-	return s;
 }
 
 map<string,string> instructType = {{"add", "R"}, {"sub", "R"}, {"and", "R"}, {"or", "R"}, {"xor", "R"}, {"sll", "R"}, {"srl", "R"}, {"sra", "R"}, {"addi", "I"}, {"xori", "I"}, {"ori", "I"}, {"andi", "I"}, {"slli", "I"}, {"srli", "I"}, {"srai", "I"}, {"lb", "I_l"}, {"lh", "I_l"}, {"lw", "I_l"}, {"ld", "I_l"}, {"lbu", "I_l"}, {"lhu", "I_l"}, {"lwu", "I_l"}, {"sb", "S"}, {"sh", "S"}, {"sw", "S"}, {"sd", "S"}, {"beq", "B"}, {"bne", "B"}, {"blt", "B"}, {"bge", "B"},{"bltu", "B"}, {"bgeu" , "B"}, {"jal", "J"}, {"jalr", "JR"}, {"lui", "U"}, {"auipc", "U"}};
@@ -365,117 +400,201 @@ bool execute_I_ltype(string line, int i){
 	ll pos = registers[rs1_num] + num - 0x10000;
 	ll data = 0;
 
-	if(op=="lb" || op=="lbu"){
-		long byte;
-		for(int i=0;i>=0;i--){
-			byte = mem[pos+i].to_ulong();
-			data += byte;
-			if(i>0){
-				data = data << 8;
-			}
-		}
-	}
-	else if(op=="lh" || op=="lhu"){
-		long byte = 0;
-		for(int i=1;i>=0;i--){
-			byte = mem[pos+i].to_ulong();
-			data += byte;
-			if(i>0){
-				data = data << 8;
-			}
-		}
-	}
-	else if(op=="lw" || op=="lwu"){
-		long byte = 0;
-		for(int i=3;i>=0;i--){
-			byte = mem[pos+i].to_ulong();
-			data += byte;
-			if(i>0){
-				data = data << 8;
-			}
-		}
-	}
-	else if(op=="ld"){
-		accesses++;
-		time_stamp_access++;
-		int address = registers[rs1_num] + num;
-		int col_num = address & (cols-1);
-		int offset_bits = log2(cols);
-		address = address >> offset_bits;	
-		int row_num = address & (rows-1);
-		int index_bits = log2(rows);
-		address = address >> index_bits;
-		int tag = address;		
+	accesses++;
+	time_stamp_access++;
+	int address = registers[rs1_num] + num;
+	int address_original = address;
+	int col_num = address & (cols-1);
+	int offset_bits = log2(cols);
+	address = address >> offset_bits;	
+	int row_num = address & (rows-1);
+	int index_bits = log2(rows);
+	address = address >> index_bits;
+	int tag = address;
+	address = address_original;
 
-		if(enable==1 && (cols - col_num) >= 8){
-			for(int i=0;i<ass;i++){
-				if(tag == cache[row_num][i][0] && cache[row_num][i][1] == 1){
+	if (op == "lb" || op == "lbu") {
+		if (enable == 1 && (cols - col_num) >= 1) {
+			for (int i = 0; i < ass; i++) {
+				if (tag == cache[row_num][i][0] && cache[row_num][i][1] == 1) {
 					hits++;
+					string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Hit, Tag: " + HexConversion(tag) + ", ";
+					temp += (cache[row_num][i][2] == 0) ? "Clean" : "Dirty";
+					cacheOperations.push_back(temp);
+
 					cache[row_num][i][3] = time_stamp_access;
 					long byte = 0;
-					for(int j=7;j>=0;j--){
+					for (int j = 0; j >= 0; j--) {
 						byte = cache[row_num][i][col_num + 5 + j];
 						data += byte;
-						if(j>0){
+						if (j > 0) {
 							data = data << 8;
 						}
 					}
-
 					registers[rd_num] = data;
 					return false;
 				}
 			}
 		}
-
 		misses++;
+		string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Miss, Tag: " + HexConversion(tag) + ", ";
+		temp += "Clean";
+		cacheOperations.push_back(temp);
 		time_stamp_misses++;
 		long byte = 0;
-		for(int i=7;i>=0;i--){
-			byte = mem[pos+i].to_ulong();
+		for (int i = 0; i >= 0; i--) {
+			byte = mem[pos + i].to_ulong();
 			data += byte;
-			if(i>0){
+			if (i > 0) {
 				data = data << 8;
 			}
 		}
+	} else if (op == "lh" || op == "lhu") {
+		if (enable == 1 && (cols - col_num) >= 2) {
+			for (int i = 0; i < ass; i++) {
+				if (tag == cache[row_num][i][0] && cache[row_num][i][1] == 1) {
+					hits++;
+					string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Hit, Tag: " + HexConversion(tag) + ", ";
+					temp += (cache[row_num][i][2] == 0) ? "Clean" : "Dirty";
+					cacheOperations.push_back(temp);
 
-		if(col_num == 0){
-			int temp = 5, replace = 1;
-			for(int i=0;i<ass;i++){
-				if(cache[row_num][i][1] == 0){
-					replace = 0;
 					cache[row_num][i][3] = time_stamp_access;
-					cache[row_num][i][4] = time_stamp_misses;
-					cache[row_num][i][1] = 1;
-					for(int j=0;j<cols;j++){
-						byte = mem[pos+j].to_ulong();
-						cache[row_num][i][temp++] = byte;
+					long byte = 0;
+					for (int j = 1; j >= 0; j--) {
+						byte = cache[row_num][i][col_num + 5 + j];
+						data += byte;
+						if (j > 0) {
+							data = data << 8;
+						}
 					}
-					cache[row_num][i][0] = tag;
-					break;
+					registers[rd_num] = data;
+					return false;
 				}
-			}
-
-			if(replace){
-				int index = 0;
-				if(cache_type == "RANDOM"){
-					index = replace_random();
-				}
-				else if(cache_type == "LRU"){
-					index = replace_LRU(row_num);
-				}
-				else if(cache_type == "FIFO"){
-					index = replace_FIFO(row_num);
-				}
-
-				cache[row_num][index][3] = time_stamp_access;
-				cache[row_num][index][4] = time_stamp_misses;
-				for(int j=0;j<cols;j++){
-					byte = mem[pos+j].to_ulong();
-					cache[row_num][index][temp++] = byte;
-				}
-				cache[row_num][index][0] = tag;
 			}
 		}
+		misses++;
+		string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Miss, Tag: " + HexConversion(tag) + ", ";
+		temp += "Clean";
+		cacheOperations.push_back(temp);
+		time_stamp_misses++;
+		long byte = 0;
+		for (int i = 1; i >= 0; i--) {
+			byte = mem[pos + i].to_ulong();
+			data += byte;
+			if (i > 0) {
+				data = data << 8;
+			}
+		}
+	} else if (op == "lw" || op == "lwu") {
+		if (enable == 1 && (cols - col_num) >= 4) {
+			for (int i = 0; i < ass; i++) {
+				if (tag == cache[row_num][i][0] && cache[row_num][i][1] == 1) {
+					hits++;
+					string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Hit, Tag: " + HexConversion(tag) + ", ";
+					temp += (cache[row_num][i][2] == 0) ? "Clean" : "Dirty";
+					cacheOperations.push_back(temp);
+
+					cache[row_num][i][3] = time_stamp_access;
+					long byte = 0;
+					for (int j = 3; j >= 0; j--) {
+						byte = cache[row_num][i][col_num + 5 + j];
+						data += byte;
+						if (j > 0) {
+							data = data << 8;
+						}
+					}
+					registers[rd_num] = data;
+					return false;
+				}
+			}
+		}
+		misses++;
+		string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Miss, Tag: " + HexConversion(tag) + ", ";
+		temp += "Clean";
+		cacheOperations.push_back(temp);
+		time_stamp_misses++;
+		long byte = 0;
+		for (int i = 3; i >= 0; i--) {
+			byte = mem[pos + i].to_ulong();
+			data += byte;
+			if (i > 0) {
+				data = data << 8;
+			}
+		}
+	} else if (op == "ld") {
+		if (enable == 1 && (cols - col_num) >= 8) {
+			for (int i = 0; i < ass; i++) {
+				if (tag == cache[row_num][i][0] && cache[row_num][i][1] == 1) {
+					hits++;
+					string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Hit, Tag: " + HexConversion(tag) + ", ";
+					temp += (cache[row_num][i][2] == 0) ? "Clean" : "Dirty";
+					cacheOperations.push_back(temp);
+
+					cache[row_num][i][3] = time_stamp_access;
+					long byte = 0;
+					for (int j = 7; j >= 0; j--) {
+						byte = cache[row_num][i][col_num + 5 + j];
+						data += byte;
+						if (j > 0) {
+							data = data << 8;
+						}
+					}
+					registers[rd_num] = data;
+					return false;
+				}
+			}
+		}
+		misses++;
+		string temp = "R: Address: " + HexConversion(address) + ", Set: " + HexConversion(row_num) + ", Miss, Tag: " + HexConversion(tag) + ", ";
+		temp += "Clean";
+		cacheOperations.push_back(temp);
+		time_stamp_misses++;
+		long byte = 0;
+		for (int i = 7; i >= 0; i--) {
+			byte = mem[pos + i].to_ulong();
+			data += byte;
+			if (i > 0) {
+				data = data << 8;
+			}
+		}
+	}
+
+	int temp = 5, replace = 1;
+	long byte = 0;
+	for(int i=0;i<ass;i++){
+		if(cache[row_num][i][1] == 0){
+			replace = 0;
+			cache[row_num][i][3] = time_stamp_access;
+			cache[row_num][i][4] = time_stamp_misses;
+			cache[row_num][i][1] = 1;
+			for(int j=col_num;j<cols;j++){
+				byte = mem[pos+j].to_ulong();
+				cache[row_num][i][temp++] = byte;
+			}
+			cache[row_num][i][0] = tag;
+			break;
+		}
+	}
+
+	if(replace){
+		int index = 0;
+		if(cache_type == "RANDOM"){
+			index = replace_random();
+		}
+		else if(cache_type == "LRU"){
+			index = replace_LRU(row_num);
+		}
+		else if(cache_type == "FIFO"){
+			index = replace_FIFO(row_num);
+		}
+
+		cache[row_num][index][3] = time_stamp_access;
+		cache[row_num][index][4] = time_stamp_misses;
+		for(int j=col_num;j<cols;j++){
+			byte = mem[pos+j].to_ulong();
+			cache[row_num][index][temp++] = byte;
+		}
+		cache[row_num][index][0] = tag;
 	}
 
 	registers[rd_num] = data;
@@ -540,36 +659,523 @@ bool execute_Stype(string line, int i){
 	ll pos = registers[rs1_num] + num - 0x10000;
 	ll data = registers[rs2_num];
 
+	accesses++;
+	time_stamp_access++;
+	int address = registers[rs1_num] + num;
+	int address_original = address;
+	int col_num = address & (cols-1);
+	int offset_bits = log2(cols);
+	address = address >> offset_bits;	
+	int row_num = address & (rows-1);
+	int index_bits = log2(rows);
+	address = address >> index_bits;
+	int tag = address;
+	address = address_original;
+
 	if(op=="sb"){
-		int byte = 0;
-		for(int i=1;i<=1;i++){
-			byte = (data & (0b11111111));
-			mem[pos++] = byte; 
-			data = data >> 8;
+		if(write_type == "WT"){
+			int byte = 0;
+			for(int i=0;i<1;i++){
+				byte = (data & (0b11111111));
+				mem[pos++] = byte; 
+				data = data >> 8;
+			}
+
+			if(enable == 1){
+				int hit_found = 0;
+				for(int i=0;i<ass;i++){
+					if(cache[row_num][i][1] == 1 && tag == cache[row_num][i][0]){
+						hits++;
+						hit_log(address, row_num, tag, i);
+						hit_found = 1;
+						cache[row_num][i][3] = time_stamp_access;
+						long byte = 0;
+						for(int j=0;j>=0;j--){
+							byte = (data & (0b11111111));
+							cache[row_num][i][col_num + 5 + j] = byte;
+							data = data >> 8;
+						}
+						break;
+					}
+				}
+
+				if(!hit_found){
+					misses++;
+					miss_log(address, row_num, tag);
+					time_stamp_misses++;
+				}
+			}
+		}
+		else{
+			bool flag = false;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 0){
+					misses++;
+					miss_log(address, row_num, tag);
+					time_stamp_misses++;
+					flag = true;
+					cache[row_num][i][1] = 1;
+					cache[row_num][i][2] = 1;
+
+					long byte = 0;
+					for(int j=0;j>=0;j--){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+
+					cache[row_num][i][0] = tag;
+					break;
+				}
+			}
+
+			if(!flag){
+				bool found = false;
+				for(int i=0;i<ass;i++){
+					if(cache[row_num][i][2] == 0){
+						found = true;
+						if(tag == cache[row_num][i][0]){
+							hits++;
+							hit_log(address, row_num, tag, i);
+							cache[row_num][i][3] = time_stamp_access;
+						}
+						else{
+							misses++;
+							miss_log(address, row_num, tag);
+							time_stamp_misses++;
+						}
+
+						cache[row_num][i][1] = 1;
+						cache[row_num][i][2] = 1;
+
+						long byte = 0;
+						for(int j=0;j>=0;j--){
+							byte = (data & (0b11111111));
+							cache[row_num][i][col_num + 5 + j] = byte;
+							data = data >> 8;
+						}
+						cache[row_num][i][0] = tag;
+						break;
+					}
+				}
+
+				if(!found){
+					int index = 0;
+					if(cache_type == "RANDOM"){
+						index = replace_random();
+					}
+					else if(cache_type == "LRU"){
+						index = replace_LRU(row_num);
+					}
+					else if(cache_type == "FIFO"){
+						index = replace_FIFO(row_num);
+					}
+
+					if(tag == cache[row_num][index][0]){
+						hits++;
+						hit_log(address, row_num, tag, index);
+						cache[row_num][index][3] = time_stamp_access;
+					}
+					else{
+						misses++;
+						miss_log(address, row_num, tag);
+						time_stamp_misses++;
+					}
+
+					cache[row_num][index][3] = time_stamp_access;
+					cache[row_num][index][4] = time_stamp_misses;
+
+					for(int j=0;j<cols;j++){
+						mem[pos++] = cache[row_num][index][j];
+					}
+
+					long byte = 0;
+					for(int j=0;j>=0;j--){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					cache[row_num][index][0] = tag;
+				}
+			}
 		}
 	}
 	else if(op=="sh"){
-		int byte = 0;
-		for(int i=1;i<=2;i++){
-			byte = (data & (0b11111111));
-			mem[pos++] = byte; 
-			data = data >> 8;
+		if(write_type == "WT"){
+			int byte = 0;
+			for(int i=0;i<2;i++){
+				byte = (data & (0b11111111));
+				mem[pos++] = byte; 
+				data = data >> 8;
+			}
+
+			int hit_found = 0;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 1 && tag == cache[row_num][i][0]){
+					hits++;
+					hit_log(address, row_num, tag, i);
+					hit_found = 1;
+					cache[row_num][i][3] = time_stamp_access;
+					long byte = 0;
+					for(int j=0;j<2;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					break;
+				}
+			}
+
+			if(!hit_found){
+				misses++;
+				miss_log(address, row_num, tag);
+				time_stamp_misses++;
+			}
+		}
+		else{
+			bool flag = false;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 0){
+					misses++;
+					miss_log(address, row_num, tag);
+					time_stamp_misses++;
+					flag = true;
+					cache[row_num][i][1] = 1;
+					cache[row_num][i][2] = 1;
+					
+					long byte = 0;
+					for(int j=0;j<2;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+
+					cache[row_num][i][0] = tag;
+					break;
+				}
+			}
+
+			if(!flag){
+				bool found = false;
+				for(int i=0;i<ass;i++){
+					if(cache[row_num][i][2] == 0){
+						found = true;
+						if(tag == cache[row_num][i][0]){
+							hits++;
+							hit_log(address, row_num, tag, i);
+							cache[row_num][i][3] = time_stamp_access;
+						}
+						else{
+							misses++;
+							miss_log(address, row_num, tag);
+							time_stamp_misses++;
+						}
+
+						cache[row_num][i][1] = 1;
+						cache[row_num][i][2] = 1;
+
+						long byte = 0;
+						for(int j=0;j<2;j++){
+							byte = (data & (0b11111111));
+							cache[row_num][i][col_num + 5 + j] = byte;
+							data = data >> 8;
+						}
+						cache[row_num][i][0] = tag;
+						break;
+					}
+				}
+
+				if(!found){
+					int index = 0;
+					if(cache_type == "RANDOM"){
+						index = replace_random();
+					}
+					else if(cache_type == "LRU"){
+						index = replace_LRU(row_num);
+					}
+					else if(cache_type == "FIFO"){
+						index = replace_FIFO(row_num);
+					}
+
+					if(tag == cache[row_num][index][0]){
+						hits++;
+						hit_log(address, row_num, tag, index);
+						cache[row_num][index][3] = time_stamp_access;
+					}
+					else{
+						misses++;
+						miss_log(address, row_num, tag);
+						time_stamp_misses++;
+					}
+
+					cache[row_num][index][3] = time_stamp_access;
+					cache[row_num][index][4] = time_stamp_misses;
+
+					for(int j=0;j<cols;j++){
+						mem[pos++] = cache[row_num][index][j];
+					}
+
+					long byte = 0;
+					for(int j=0;j<2;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					cache[row_num][index][0] = tag;
+				}
+			}
 		}
 	}
 	else if(op=="sw"){
-		int byte = 0;
-		for(int i=1;i<=4;i++){
-			byte = (data & (0b11111111));
-			mem[pos++] = byte; 
-			data = data >> 8;
+		if(write_type == "WT"){
+			int byte = 0;
+			for(int i=0;i<4;i++){
+				byte = (data & (0b11111111));
+				mem[pos++] = byte; 
+				data = data >> 8;
+			}
+
+			int hit_found = 0;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 1 && tag == cache[row_num][i][0]){
+					hits++;
+					hit_log(address, row_num, tag, i);
+					hit_found = 1;
+					cache[row_num][i][3] = time_stamp_access;
+					long byte = 0;
+					for(int j=0;j<2;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					break;
+				}
+			}
+
+			if(!hit_found){
+				misses++;
+				miss_log(address, row_num, tag);
+				time_stamp_misses++;
+			}
+		}
+		else{
+			bool flag = false;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 0){
+					misses++;
+					miss_log(address, row_num, tag);
+					time_stamp_misses++;
+					flag = true;
+					cache[row_num][i][1] = 1;
+					cache[row_num][i][2] = 1;
+					
+					long byte = 0;
+					for(int j=0;j<4;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+
+					cache[row_num][i][0] = tag;
+					break;
+				}
+			}
+
+			if(!flag){
+				bool found = false;
+				for(int i=0;i<ass;i++){
+					if(cache[row_num][i][2] == 0){
+						found = true;
+						if(tag == cache[row_num][i][0]){
+							hits++;
+							hit_log(address, row_num, tag, i);
+							cache[row_num][i][3] = time_stamp_access;
+						}
+						else{
+							misses++;
+							miss_log(address, row_num, tag);
+							time_stamp_misses++;
+						}
+
+						cache[row_num][i][1] = 1;
+						cache[row_num][i][2] = 1;
+
+						long byte = 0;
+						for(int j=0;j<4;j++){
+							byte = (data & (0b11111111));
+							cache[row_num][i][col_num + 5 + j] = byte;
+							data = data >> 8;
+						}
+						cache[row_num][i][0] = tag;
+						break;
+					}
+				}
+
+				if(!found){
+					int index = 0;
+					if(cache_type == "RANDOM"){
+						index = replace_random();
+					}
+					else if(cache_type == "LRU"){
+						index = replace_LRU(row_num);
+					}
+					else if(cache_type == "FIFO"){
+						index = replace_FIFO(row_num);
+					}
+
+					if(tag == cache[row_num][index][0]){
+						hits++;
+						hit_log(address, row_num, tag, index);
+						cache[row_num][index][3] = time_stamp_access;
+					}
+					else{
+						misses++;
+						miss_log(address, row_num, tag);
+						time_stamp_misses++;
+					}
+
+					cache[row_num][index][3] = time_stamp_access;
+					cache[row_num][index][4] = time_stamp_misses;
+
+					for(int j=0;j<cols;j++){
+						mem[pos++] = cache[row_num][index][j];
+					}
+
+					long byte = 0;
+					for(int j=0;j<4;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					cache[row_num][index][0] = tag;
+				}
+			}
 		}
 	}
 	else if(op=="sd"){
-		int byte = 0;
-		for(int i=1;i<=8;i++){
-			byte = (data & (0b11111111));
-			mem[pos++] = byte; 
-			data = data >> 8;
+		if(write_type == "WT"){
+			int byte = 0;
+			for(int i=0;i<8;i++){
+				byte = (data & (0b11111111));
+				mem[pos++] = byte; 
+				data = data >> 8;
+			}
+
+			int hit_found = 0;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 1 && tag == cache[row_num][i][0]){
+					hits++;
+					hit_log(address, row_num, tag, i);
+					hit_found = 1;
+					cache[row_num][i][3] = time_stamp_access;
+					long byte = 0;
+					for(int j=0;j<2;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					break;
+				}
+			}
+
+			if(!hit_found){
+				misses++;
+				miss_log(address, row_num, tag);
+				time_stamp_misses++;
+			}
+		}
+		else{
+			bool flag = false;
+			for(int i=0;i<ass;i++){
+				if(cache[row_num][i][1] == 0){
+					misses++;
+					miss_log(address, row_num, tag);
+					time_stamp_misses++;
+					flag = true;
+					cache[row_num][i][1] = 1;
+					cache[row_num][i][2] = 1;
+					
+					long byte = 0;
+					for(int j=0;j<8;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+
+					cache[row_num][i][0] = tag;
+					break;
+				}
+			}
+
+			if(!flag){
+				bool found = false;
+				for(int i=0;i<ass;i++){
+					if(cache[row_num][i][2] == 0){
+						found = true;
+						if(tag == cache[row_num][i][0]){
+							hits++;
+							hit_log(address, row_num, tag, i);
+							cache[row_num][i][3] = time_stamp_access;
+						}
+						else{
+							misses++;
+							miss_log(address, row_num, tag);
+							time_stamp_misses++;
+						}
+
+						cache[row_num][i][1] = 1;
+						cache[row_num][i][2] = 1;
+
+						long byte = 0;
+						for(int j=0;j<8;j++){
+							byte = (data & (0b11111111));
+							cache[row_num][i][col_num + 5 + j] = byte;
+							data = data >> 8;
+						}
+						cache[row_num][i][0] = tag;
+						break;
+					}
+				}
+
+				if(!found){
+					int index = 0;
+					if(cache_type == "RANDOM"){
+						index = replace_random();
+					}
+					else if(cache_type == "LRU"){
+						index = replace_LRU(row_num);
+					}
+					else if(cache_type == "FIFO"){
+						index = replace_FIFO(row_num);
+					}
+
+					if(tag == cache[row_num][index][0]){
+						hits++;
+						hit_log(address, row_num, tag, index);
+						cache[row_num][index][3] = time_stamp_access;
+					}
+					else{
+						misses++;
+						miss_log(address, row_num, tag);
+						time_stamp_misses++;
+					}
+
+					cache[row_num][index][3] = time_stamp_access;
+					cache[row_num][index][4] = time_stamp_misses;
+
+					for(int j=0;j<cols;j++){
+						mem[pos++] = cache[row_num][index][j];
+					}
+
+					long byte = 0;
+					for(int j=0;j<8;j++){
+						byte = (data & (0b11111111));
+						cache[row_num][i][col_num + 5 + j] = byte;
+						data = data >> 8;
+					}
+					cache[row_num][index][0] = tag;
+				}
+			}
 		}
 	}
 	else{
@@ -957,16 +1563,22 @@ void makeCache(string filename){
 				cache_type = line;
 				break;
 			case 4:
-
+				write_type = line;
 				break;
 		}
 		i++;
 	}
 
 	rows = cache_size / block_size;
-	rows /= cache_ass;
+	if(cache_ass == 0){
+		ass = rows;
+		rows = 1;
+	}
+	else{
+		rows /= cache_ass;
+		ass = cache_ass;
+	}
 	cols = block_size;
-	ass = cache_ass;
 
 	cache = new ll**[rows];
 	for(int j=0;j<rows;j++){
@@ -1011,9 +1623,11 @@ int main(){
 				string filename = command.substr(i);
 				makeCache(filename);
 				enable = 1;
+				cout<<"Cache Enabled"<<endl<<endl;
 			}
 			else if(cache_operation == "disable"){
 				enable = 0;
+				cout<<"Cache Disabled"<<endl<<endl;
 			}
 			else if(cache_operation == "status"){
 				int c_size = rows*cols*ass;
@@ -1022,6 +1636,7 @@ int main(){
 				cout<<"Block Size: "<<cols<<endl;
 				cout<<"Associativity: "<<ass<<endl;
 				cout<<"Replacement Policy: "<<cache_type<<endl;
+				cout<<"Write Back Policy: "<<write_type<<endl;
 				cout<<endl;
 			}
 			else if(cache_operation == "invalidate"){
@@ -1030,9 +1645,23 @@ int main(){
 						cache[i][j][1] = 0;
 					}
 				}
+
+				cout<<"All Cache entries set to invalid"<<endl<<endl;
 			}
 			else if(cache_operation == "dump"){
-				string filename = command.substr(i);
+				for(int i=0;i<rows;i++){
+					for(int j=0;j<ass;j++){
+						if(cache[i][j][1] == 1){
+							cout<<"Set: "<<HexConversion(i)<<", Tag: "<<HexConversion(cache[i][j][0])<<", ";
+							if(cache[i][j][2] == 1){
+								cout<<"Dirty"<<endl;
+							}
+							else{
+								cout<<"Clean"<<endl;
+							}
+						}
+					}
+				}
 			}
 			else if(cache_operation == "stats"){
 				double hit_rate = (double)hits/accesses;
@@ -1041,6 +1670,8 @@ int main(){
 		}
 		else if(operation == "load"){
 			string filename = command.substr(i+1, n-i-1);
+			int len = filename.length();
+			input_filename = filename.substr(0, len-2);
 			loadCommand(filename);
 			cout<<endl;
 			instruction_pos = 0;
@@ -1122,6 +1753,16 @@ int main(){
 					}
 				}
 			}
+
+			string filename = input_filename + ".output";
+			ofstream outFile(filename);
+			for (const auto& str : cacheOperations) {
+				outFile << str << endl;
+			}
+			outFile.close();
+
+			double hit_rate = (double)hits/accesses;
+			cout<<"D-cache statistics: Accesses="<<accesses<<", Hit="<<hits<<", Miss="<<misses<<", Hit Rate="<<hit_rate<<endl;
 			cout<<endl;
 		}
 		else if(operation == "step"){
