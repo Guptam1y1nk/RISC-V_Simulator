@@ -19,14 +19,39 @@ ll*** cache;
 int enable = 0;
 int accesses = 0, hits = 0, misses = 0;
 string cache_type;
+int time_stamp_access = 0, time_stamp_misses = 0;
 
 int replace_random(){
 	int index = rand()%ass;
 	return index;
 }
 
-int replace_LRU(){
+int replace_LRU(int row){
+	int mini = INT_MAX;
+	int index = -1;
 
+	for(int i=0;i<ass;i++){
+		if(cache[row][i][3] < mini){
+			mini = cache[row][i][3];
+			index = i;
+		}
+	}
+
+	return index;
+}
+
+int replace_FIFO(int row){
+	int mini = INT_MAX;
+	int index = -1;
+
+	for(int i=0;i<ass;i++){
+		if(cache[row][i][4] < mini){
+			mini = cache[row][i][4];
+			index = i;
+		}
+	}
+
+	return index;
 }
 
 void twoComplement(string &s){
@@ -372,6 +397,7 @@ bool execute_I_ltype(string line, int i){
 	}
 	else if(op=="ld"){
 		accesses++;
+		time_stamp_access++;
 		int address = registers[rs1_num] + num;
 		int col_num = address & (cols-1);
 		int offset_bits = log2(cols);
@@ -383,12 +409,12 @@ bool execute_I_ltype(string line, int i){
 
 		if(enable==1 && (cols - col_num) >= 8){
 			for(int i=0;i<ass;i++){
-				if(cache[row_num][i][1] == 1){
+				if(tag == cache[row_num][i][0] && cache[row_num][i][1] == 1){
 					hits++;
-					cout<<"hit"<<endl;
+					cache[row_num][i][3] = time_stamp_access;
 					long byte = 0;
 					for(int j=7;j>=0;j--){
-						byte = cache[row_num][i][col_num + 4 + j];
+						byte = cache[row_num][i][col_num + 5 + j];
 						data += byte;
 						if(j>0){
 							data = data << 8;
@@ -402,6 +428,7 @@ bool execute_I_ltype(string line, int i){
 		}
 
 		misses++;
+		time_stamp_misses++;
 		long byte = 0;
 		for(int i=7;i>=0;i--){
 			byte = mem[pos+i].to_ulong();
@@ -412,15 +439,18 @@ bool execute_I_ltype(string line, int i){
 		}
 
 		if(col_num == 0){
-			int temp = 4, replace = 1;
+			int temp = 5, replace = 1;
 			for(int i=0;i<ass;i++){
 				if(cache[row_num][i][1] == 0){
 					replace = 0;
+					cache[row_num][i][3] = time_stamp_access;
+					cache[row_num][i][4] = time_stamp_misses;
 					cache[row_num][i][1] = 1;
 					for(int j=0;j<cols;j++){
 						byte = mem[pos+j].to_ulong();
 						cache[row_num][i][temp++] = byte;
 					}
+					cache[row_num][i][0] = tag;
 					break;
 				}
 			}
@@ -431,16 +461,19 @@ bool execute_I_ltype(string line, int i){
 					index = replace_random();
 				}
 				else if(cache_type == "LRU"){
-					index = replace_LRU();
+					index = replace_LRU(row_num);
 				}
 				else if(cache_type == "FIFO"){
-					index = replace_FIFO();
+					index = replace_FIFO(row_num);
 				}
 
+				cache[row_num][index][3] = time_stamp_access;
+				cache[row_num][index][4] = time_stamp_misses;
 				for(int j=0;j<cols;j++){
 					byte = mem[pos+j].to_ulong();
 					cache[row_num][index][temp++] = byte;
 				}
+				cache[row_num][index][0] = tag;
 			}
 		}
 	}
@@ -941,7 +974,7 @@ void makeCache(string filename){
 	}
 	for(int j=0;j<rows;j++){
 		for(int k=0;k<ass;k++){
-			cache[j][k] = new ll[cols+4];
+			cache[j][k] = new ll[cols+5];
 		}
 	}
 
